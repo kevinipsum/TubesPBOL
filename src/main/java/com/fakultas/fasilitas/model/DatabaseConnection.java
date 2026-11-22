@@ -5,8 +5,7 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 
 public class DatabaseConnection {
-    // Menggunakan database 'db_fasilitas' sesuai dengan yang ada di HeidiSQL/Laragon kamu
-    private static final String URL = "jdbc:mysql://localhost:3306/db_fasilitas?useSSL=false&serverTimezone=UTC";
+    private static final String URL = "jdbc:mysql://localhost:3306/db_fasilitas?useSSL=false&serverTimezone=Asia/Jakarta";
     private static final String USER = "root";
     private static final String PASSWORD = "";
 
@@ -14,7 +13,7 @@ public class DatabaseConnection {
         try {
             Class.forName("com.mysql.cj.jdbc.Driver");
         } catch (ClassNotFoundException e) {
-            throw new SQLException("Driver MySQL tidak ditemukan: " + e.getMessage());
+            throw new SQLException("Driver MySQL JDBC tidak ditemukan!", e);
         }
         return DriverManager.getConnection(URL, USER, PASSWORD);
     }
