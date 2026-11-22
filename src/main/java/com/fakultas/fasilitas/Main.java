@@ -1,5 +1,4 @@
-package com.fakultas.fasilitas.view;
-
+package com.fakultas.fasilitas;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 
