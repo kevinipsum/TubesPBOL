@@ -1,6 +1,5 @@
 package com.fakultas.fasilitas.model;
 
-<<<<<<< HEAD
 import java.sql.Timestamp;
 
 public class ModelUser {
@@ -100,13 +99,6 @@ public class ModelUser {
         this.updatedAt = updatedAt;
     }
 
-    public String getIdentitasTampil() {
-        if (nim != null && !nim.isBlank()) {
-            return nim;
-        }
-        return username;
-    }
-
     public boolean isAdmin() {
         return "admin".equalsIgnoreCase(role);
     }
@@ -114,23 +106,8 @@ public class ModelUser {
     public boolean isPelapor() {
         return "pelapor".equalsIgnoreCase(role);
     }
-=======
-public class ModelUser {
-    private String id;
-    private String username;
-    private String role;
-    private String status;
 
-    public ModelUser(String id, String username, String role, String status) {
-        this.id = id;
-        this.username = username;
-        this.role = role;
-        this.status = status;
+    public boolean isAktif() {
+        return statusAkun == null || "aktif".equalsIgnoreCase(statusAkun);
     }
-
-    public String getId() { return id; }
-    public String getUsername() { return username; }
-    public String getRole() { return role; }
-    public String getStatus() { return status; }
->>>>>>> d0438a77b2aacef5cdd1c847833573b6a69a68de
 }

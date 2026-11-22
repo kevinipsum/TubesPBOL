@@ -1,161 +1,97 @@
 package com.fakultas.fasilitas.view;
 
 import com.fakultas.fasilitas.model.DatabaseConnection;
-<<<<<<< HEAD
-import com.fakultas.fasilitas.model.ModelUser;
 
 import javax.swing.*;
 import java.awt.*;
-=======
-
-import javax.swing.*;
-import java.awt.*;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
->>>>>>> d0438a77b2aacef5cdd1c847833573b6a69a68de
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 
 public class LoginFrame extends JFrame {
-    private JTextField txtUsername;
-    private JPasswordField txtPassword;
-<<<<<<< HEAD
-    private JButton btnMasuk, btnGantiPass;
+    private final JTextField txtNim;
+    private final JPasswordField txtPassword;
 
     public LoginFrame() {
-        setTitle("JagaRuang - Login");
-        setSize(900, 540);
+        setTitle("JagaRuang - Sistem Pelaporan Kerusakan Fasilitas");
+        setSize(900, 550);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
         setLayout(new GridLayout(1, 2));
 
-        // Panel Kiri (Hijau Tua)
+        // Panel Kiri (Branding)
         JPanel leftPanel = new JPanel(new GridBagLayout());
         leftPanel.setBackground(new Color(6, 78, 59));
-
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        gbc.insets = new Insets(0, 20, 8, 20);
-
-        JLabel lblBrand = new JLabel("JagaRuang", SwingConstants.CENTER);
-=======
-
-    public LoginFrame() {
-        setTitle("JagaRuang - Login");
-        setSize(750, 480);
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setLocationRelativeTo(null);
-        setLayout(new BorderLayout());
-
-        // Panel Samping Kiri (Hijau Khas JagaRuang)
-        JPanel leftPanel = new JPanel(new GridBagLayout());
-        leftPanel.setBackground(new Color(6, 78, 59));
-        leftPanel.setPreferredSize(new Dimension(320, 480));
-
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.gridx = 0; gbc.gridy = 0; gbc.anchor = GridBagConstraints.CENTER;
+        GridBagConstraints gbcLeft = new GridBagConstraints();
+        gbcLeft.gridx = 0;
+        gbcLeft.gridy = 0;
+        gbcLeft.anchor = GridBagConstraints.WEST;
 
         JLabel lblBrand = new JLabel("JagaRuang");
->>>>>>> d0438a77b2aacef5cdd1c847833573b6a69a68de
         lblBrand.setForeground(Color.WHITE);
         lblBrand.setFont(new Font("Segoe UI", Font.BOLD, 32));
-        leftPanel.add(lblBrand, gbc);
+        leftPanel.add(lblBrand, gbcLeft);
 
-        gbc.gridy = 1;
-<<<<<<< HEAD
-        gbc.insets = new Insets(0, 20, 0, 20);
-        JLabel lblTagline = new JLabel("<html><div style='text-align:center;'>Sistem Pelaporan & Perbaikan<br>Fasilitas Kampus</div></html>", SwingConstants.CENTER);
-        lblTagline.setForeground(new Color(167, 243, 208));
-        lblTagline.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        leftPanel.add(lblTagline, gbc);
+        gbcLeft.gridy = 1;
+        gbcLeft.insets = new Insets(10, 0, 0, 0);
+        JLabel lblDesc = new JLabel("<html>Sistem Pelaporan Kerusakan Fasilitas<br>Ruang & Gedung Fakultas</html>");
+        lblDesc.setForeground(new Color(167, 243, 208));
+        lblDesc.setFont(new Font("Segoe UI", Font.PLAIN, 15));
+        leftPanel.add(lblDesc, gbcLeft);
 
-        // Panel Kanan (Putih)
-=======
-        gbc.insets = new Insets(10, 20, 0, 20);
-        JLabel lblSub = new JLabel("<html><div style='text-align: center;'>Sistem Pelaporan & Perbaikan<br>Fasilitas Kampus</div></html>", SwingConstants.CENTER);
-        lblSub.setForeground(new Color(16, 185, 129));
-        lblSub.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-        leftPanel.add(lblSub, gbc);
-
-        add(leftPanel, BorderLayout.WEST);
-
-        // Panel Kanan (Form Input)
->>>>>>> d0438a77b2aacef5cdd1c847833573b6a69a68de
+        // Panel Kanan (Form Login)
         JPanel rightPanel = new JPanel(null);
         rightPanel.setBackground(Color.WHITE);
 
-        JLabel lblWelcome = new JLabel("Selamat Datang");
-        lblWelcome.setFont(new Font("Segoe UI", Font.BOLD, 24));
-<<<<<<< HEAD
-        lblWelcome.setForeground(new Color(15, 23, 42));
-        lblWelcome.setBounds(65, 85, 320, 32);
-        rightPanel.add(lblWelcome);
+        JLabel lblTitle = new JLabel("Masuk ke Akun");
+        lblTitle.setFont(new Font("Segoe UI", Font.BOLD, 24));
+        lblTitle.setForeground(new Color(15, 23, 42));
+        lblTitle.setBounds(60, 80, 300, 35);
+        rightPanel.add(lblTitle);
 
-        JLabel lblDesc = new JLabel("Silakan masuk menggunakan akun Anda");
-        lblDesc.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-        lblDesc.setForeground(new Color(100, 116, 139));
-        lblDesc.setBounds(65, 118, 320, 22);
-        rightPanel.add(lblDesc);
+        JLabel lblSubtitle = new JLabel("Silakan masukkan NIM dan password Anda.");
+        lblSubtitle.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        lblSubtitle.setForeground(new Color(100, 116, 139));
+        lblSubtitle.setBounds(60, 118, 320, 20);
+        rightPanel.add(lblSubtitle);
 
-        JLabel lblUser = new JLabel("NIM");
-        lblUser.setFont(new Font("Segoe UI", Font.BOLD, 12));
-        lblUser.setForeground(new Color(15, 23, 42));
-        lblUser.setBounds(65, 165, 320, 20);
-        rightPanel.add(lblUser);
+        JLabel lblNim = new JLabel("NIM");
+        lblNim.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        lblNim.setBounds(60, 160, 150, 20);
+        rightPanel.add(lblNim);
 
-        txtUsername = new JTextField();
-        txtUsername.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-        txtUsername.setBounds(65, 190, 320, 38);
-=======
-        lblWelcome.setBounds(50, 45, 300, 30);
-        rightPanel.add(lblWelcome);
-
-        JLabel lblInstruction = new JLabel("Silakan masuk menggunakan akun Anda");
-        lblInstruction.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-        lblInstruction.setForeground(new Color(100, 116, 139));
-        lblInstruction.setBounds(50, 75, 300, 20);
-        rightPanel.add(lblInstruction);
-
-        JLabel lblUser = new JLabel("Username");
-        lblUser.setFont(new Font("Segoe UI", Font.BOLD, 12));
-        lblUser.setBounds(50, 120, 100, 20);
-        rightPanel.add(lblUser);
-
-        txtUsername = new JTextField();
-        txtUsername.setBounds(50, 145, 325, 35);
->>>>>>> d0438a77b2aacef5cdd1c847833573b6a69a68de
-        rightPanel.add(txtUsername);
+        txtNim = new JTextField();
+        txtNim.setBounds(60, 185, 320, 38);
+        rightPanel.add(txtNim);
 
         JLabel lblPass = new JLabel("Password");
-        lblPass.setFont(new Font("Segoe UI", Font.BOLD, 12));
-<<<<<<< HEAD
-        lblPass.setForeground(new Color(15, 23, 42));
-        lblPass.setBounds(65, 242, 320, 20);
+        lblPass.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        lblPass.setBounds(60, 235, 150, 20);
         rightPanel.add(lblPass);
 
         txtPassword = new JPasswordField();
-        txtPassword.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-        txtPassword.setBounds(65, 267, 320, 38);
+        txtPassword.setBounds(60, 260, 320, 38);
         rightPanel.add(txtPassword);
 
-        btnMasuk = new JButton("Masuk");
+        JButton btnMasuk = new JButton("Masuk");
+        btnMasuk.setBounds(60, 320, 152, 42);
         btnMasuk.setBackground(new Color(16, 185, 129));
         btnMasuk.setForeground(Color.WHITE);
+        btnMasuk.setFont(new Font("Segoe UI", Font.BOLD, 14));
         btnMasuk.setFocusPainted(false);
         btnMasuk.setOpaque(true);
         btnMasuk.setBorderPainted(false);
-        btnMasuk.setFont(new Font("Segoe UI", Font.BOLD, 13));
-        btnMasuk.setBounds(65, 330, 320, 42);
         rightPanel.add(btnMasuk);
 
-        btnGantiPass = new JButton("Ganti Password");
-        btnGantiPass.setBackground(Color.WHITE);
-        btnGantiPass.setForeground(new Color(15, 118, 110));
+        JButton btnGantiPass = new JButton("Ganti Password");
+        btnGantiPass.setBounds(228, 320, 152, 42);
+        btnGantiPass.setBackground(new Color(226, 232, 240));
+        btnGantiPass.setForeground(new Color(15, 23, 42));
+        btnGantiPass.setFont(new Font("Segoe UI", Font.BOLD, 13));
         btnGantiPass.setFocusPainted(false);
+        btnGantiPass.setOpaque(true);
         btnGantiPass.setBorderPainted(false);
-        btnGantiPass.setContentAreaFilled(false);
-        btnGantiPass.setFont(new Font("Segoe UI", Font.BOLD, 12));
-        btnGantiPass.setBounds(150, 380, 150, 28);
         rightPanel.add(btnGantiPass);
 
         btnMasuk.addActionListener(e -> prosesLogin());
@@ -167,228 +103,151 @@ public class LoginFrame extends JFrame {
     }
 
     private void prosesLogin() {
-        String idInput = txtUsername.getText().trim();
+        String nimInput = txtNim.getText().trim();
         String passInput = new String(txtPassword.getPassword());
 
-        if (idInput.isEmpty() || passInput.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "NIM dan Password wajib diisi!", "Peringatan", JOptionPane.WARNING_MESSAGE);
+        if (nimInput.isEmpty() || passInput.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "NIM dan password wajib diisi!", "Peringatan", JOptionPane.WARNING_MESSAGE);
             return;
         }
 
-        String sql = "SELECT id, nim, username, nama_lengkap, password_hash, role, status_akun " +
+        String sql = "SELECT id, nim, username, password_hash, role, status_akun " +
                 "FROM users WHERE (nim = ? OR username = ?) AND password_hash = ? LIMIT 1";
 
         try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, nimInput);
+            ps.setString(2, nimInput);
+            ps.setString(3, passInput);
 
-            pstmt.setString(1, idInput);
-            pstmt.setString(2, idInput);
-            pstmt.setString(3, passInput);
-
-            try (ResultSet rs = pstmt.executeQuery()) {
+            try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
-                    ModelUser user = new ModelUser();
-                    user.setId(rs.getInt("id"));
-                    user.setNim(rs.getString("nim"));
-                    user.setUsername(rs.getString("username"));
-                    user.setNamaLengkap(rs.getString("nama_lengkap"));
-                    user.setPasswordHash(rs.getString("password_hash"));
-                    user.setRole(rs.getString("role"));
-                    user.setStatusAkun(rs.getString("status_akun"));
-
-                    if ("nonaktif".equalsIgnoreCase(user.getStatusAkun())) {
-                        JOptionPane.showMessageDialog(this, "Akun sedang nonaktif.", "Akses Ditolak", JOptionPane.WARNING_MESSAGE);
+                    String statusAkun = rs.getString("status_akun");
+                    if (statusAkun != null && !"aktif".equalsIgnoreCase(statusAkun)) {
+                        JOptionPane.showMessageDialog(this, "Akun Anda sedang tidak aktif!", "Akses Ditolak", JOptionPane.ERROR_MESSAGE);
                         return;
                     }
 
-                    catatLog(conn, user.getId(), "LOGIN", "Login ke sistem JagaRuang");
+                    int userId = rs.getInt("id");
+                    String role = rs.getString("role");
+                    String nimDb = rs.getString("nim");
+                    String usernameDb = rs.getString("username");
+
+                    catatLogAktivitas(conn, userId, "LOGIN", "Berhasil login ke aplikasi JagaRuang");
 
                     dispose();
-                    if (user.isAdmin()) {
-                        new AdminDashboardFrame(user.getId(), user.getIdentitasTampil()).setVisible(true);
+                    if ("admin".equalsIgnoreCase(role)) {
+                        String adminLabel = (usernameDb != null && !usernameDb.isBlank()) ? usernameDb : nimInput;
+                        new AdminDashboardFrame(userId, adminLabel).setVisible(true);
                     } else {
-                        new PelaporDashboardFrame(user.getId(), user.getIdentitasTampil()).setVisible(true);
+                        String nimFinal = (nimDb != null && !nimDb.isBlank()) ? nimDb : nimInput;
+                        new PelaporDashboardFrame(userId, nimFinal).setVisible(true);
                     }
                 } else {
-                    JOptionPane.showMessageDialog(this, "NIM atau Password salah!", "Login Gagal", JOptionPane.ERROR_MESSAGE);
+                    JOptionPane.showMessageDialog(this, "NIM atau password salah!", "Login Gagal", JOptionPane.ERROR_MESSAGE);
                 }
             }
-        } catch (SQLException e) {
-            e.printStackTrace();
-            JOptionPane.showMessageDialog(this, "Kesalahan koneksi database: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+            JOptionPane.showMessageDialog(this, "Gagal terhubung ke database: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 
     private void bukaDialogGantiPassword() {
-        JPanel form = new JPanel(new GridLayout(3, 2, 8, 8));
+        JDialog dialog = new JDialog(this, "Ganti Password", true);
+        dialog.setSize(400, 310);
+        dialog.setLocationRelativeTo(this);
+        dialog.setLayout(null);
+        dialog.getContentPane().setBackground(Color.WHITE);
 
-        JTextField fNim = new JTextField(txtUsername.getText().trim());
-        JPasswordField fPassBaru = new JPasswordField();
-        JPasswordField fPassKonf = new JPasswordField();
+        JLabel lblNim = new JLabel("NIM");
+        lblNim.setBounds(25, 20, 150, 20);
+        dialog.add(lblNim);
 
-        form.add(new JLabel("NIM:"));
-        form.add(fNim);
-        form.add(new JLabel("Password Baru:"));
-        form.add(fPassBaru);
-        form.add(new JLabel("Konfirmasi Password Baru:"));
-        form.add(fPassKonf);
+        JTextField tfNim = new JTextField(txtNim.getText().trim());
+        tfNim.setBounds(25, 42, 335, 32);
+        dialog.add(tfNim);
 
-        int hasil = JOptionPane.showConfirmDialog(
-                this,
-                form,
-                "Ganti Password",
-                JOptionPane.OK_CANCEL_OPTION,
-                JOptionPane.PLAIN_MESSAGE
-        );
+        JLabel lblPassLama = new JLabel("Password Lama");
+        lblPassLama.setBounds(25, 80, 150, 20);
+        dialog.add(lblPassLama);
 
-        if (hasil != JOptionPane.OK_OPTION) {
-            return;
-        }
+        JPasswordField pfPassLama = new JPasswordField();
+        pfPassLama.setBounds(25, 102, 335, 32);
+        dialog.add(pfPassLama);
 
-        String nim = fNim.getText().trim();
-        String passBaru = new String(fPassBaru.getPassword());
-        String passKonf = new String(fPassKonf.getPassword());
+        JLabel lblPassBaru = new JLabel("Password Baru");
+        lblPassBaru.setBounds(25, 140, 150, 20);
+        dialog.add(lblPassBaru);
 
-        if (nim.isEmpty() || passBaru.isEmpty() || passKonf.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Semua kolom wajib diisi!", "Peringatan", JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-        if (!passBaru.equals(passKonf)) {
-            JOptionPane.showMessageDialog(this, "Konfirmasi password baru tidak cocok!", "Peringatan", JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-        if (passBaru.length() < 4) {
-            JOptionPane.showMessageDialog(this, "Password baru minimal 4 karakter!", "Peringatan", JOptionPane.WARNING_MESSAGE);
-            return;
-        }
+        JPasswordField pfPassBaru = new JPasswordField();
+        pfPassBaru.setBounds(25, 162, 335, 32);
+        dialog.add(pfPassBaru);
 
-        String cekSql = "SELECT id FROM users WHERE nim = ? OR username = ? LIMIT 1";
-        String updSql = "UPDATE users SET password_hash = ? WHERE id = ?";
+        JButton btnSimpan = new JButton("Simpan Password");
+        btnSimpan.setBounds(200, 210, 160, 36);
+        btnSimpan.setBackground(new Color(16, 185, 129));
+        btnSimpan.setForeground(Color.WHITE);
+        btnSimpan.setFocusPainted(false);
+        btnSimpan.setOpaque(true);
+        btnSimpan.setBorderPainted(false);
+        dialog.add(btnSimpan);
 
-        try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement cekStmt = conn.prepareStatement(cekSql)) {
+        btnSimpan.addActionListener(e -> {
+            String nim = tfNim.getText().trim();
+            String passLama = new String(pfPassLama.getPassword());
+            String passBaru = new String(pfPassBaru.getPassword());
 
-            cekStmt.setString(1, nim);
-            cekStmt.setString(2, nim);
-
-            try (ResultSet rs = cekStmt.executeQuery()) {
-                if (!rs.next()) {
-                    JOptionPane.showMessageDialog(this, "Akun tidak ditemukan!", "Gagal", JOptionPane.ERROR_MESSAGE);
-                    return;
-                }
-
-                int userId = rs.getInt("id");
-
-                try (PreparedStatement updStmt = conn.prepareStatement(updSql)) {
-                    updStmt.setString(1, passBaru);
-                    updStmt.setInt(2, userId);
-                    updStmt.executeUpdate();
-                }
-
-                catatLog(conn, userId, "GANTI_PASSWORD", "Ganti password tanpa password lama");
-                JOptionPane.showMessageDialog(this, "Password berhasil diperbarui! Silakan masuk dengan password baru.");
+            if (nim.isEmpty() || passLama.isEmpty() || passBaru.isEmpty()) {
+                JOptionPane.showMessageDialog(dialog, "Semua field wajib diisi!", "Peringatan", JOptionPane.WARNING_MESSAGE);
+                return;
             }
-        } catch (SQLException e) {
-            e.printStackTrace();
-            JOptionPane.showMessageDialog(this, "Gagal mengganti password: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-        }
+            if (passBaru.length() < 4) {
+                JOptionPane.showMessageDialog(dialog, "Password baru minimal 4 karakter!", "Peringatan", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+
+            String sqlCek = "SELECT id FROM users WHERE (nim = ? OR username = ?) AND password_hash = ? LIMIT 1";
+            String sqlUpd = "UPDATE users SET password_hash = ? WHERE id = ?";
+
+            try (Connection conn = DatabaseConnection.getConnection();
+                 PreparedStatement psCek = conn.prepareStatement(sqlCek)) {
+                psCek.setString(1, nim);
+                psCek.setString(2, nim);
+                psCek.setString(3, passLama);
+
+                try (ResultSet rs = psCek.executeQuery()) {
+                    if (!rs.next()) {
+                        JOptionPane.showMessageDialog(dialog, "NIM atau password lama tidak sesuai!", "Gagal", JOptionPane.ERROR_MESSAGE);
+                        return;
+                    }
+                    int userId = rs.getInt("id");
+                    try (PreparedStatement psUpd = conn.prepareStatement(sqlUpd)) {
+                        psUpd.setString(1, passBaru);
+                        psUpd.setInt(2, userId);
+                        psUpd.executeUpdate();
+                    }
+                    catatLogAktivitas(conn, userId, "GANTI_PASSWORD", "Password diganti melalui halaman login");
+                    JOptionPane.showMessageDialog(dialog, "Password berhasil diperbarui!");
+                    dialog.dispose();
+                }
+            } catch (SQLException ex) {
+                ex.printStackTrace();
+                JOptionPane.showMessageDialog(dialog, "Gagal mengganti password: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        });
+
+        dialog.setVisible(true);
     }
 
-    private void catatLog(Connection conn, int userId, String jenis, String ket) {
+    private void catatLogAktivitas(Connection conn, int userId, String jenisAktivitas, String keterangan) {
         String sql = "INSERT INTO log_aktivitas_akun (user_id, jenis_aktivitas, keterangan) VALUES (?, ?, ?)";
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, userId);
-            ps.setString(2, jenis);
-            ps.setString(3, ket);
+            ps.setString(2, jenisAktivitas);
+            ps.setString(3, keterangan);
             ps.executeUpdate();
         } catch (SQLException ignored) {
-=======
-        lblPass.setBounds(50, 195, 100, 20);
-        rightPanel.add(lblPass);
-
-        txtPassword = new JPasswordField();
-        txtPassword.setBounds(50, 220, 325, 35);
-        rightPanel.add(txtPassword);
-
-        JButton btnLogin = new JButton("Masuk");
-        btnLogin.setBackground(new Color(16, 185, 129));
-        btnLogin.setForeground(Color.WHITE);
-        btnLogin.setFocusPainted(false); btnLogin.setOpaque(true); btnLogin.setBorderPainted(false);
-        btnLogin.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        btnLogin.setBounds(50, 280, 325, 42);
-        btnLogin.addActionListener(e -> prosesLogin());
-        rightPanel.add(btnLogin);
-
-        // Opsi Lupa Password berbentuk Link Teks di bawah tombol Masuk
-        JLabel lblLupaPass = new JLabel("<html><a href='' style='color: #0d9488; text-decoration: none;'>Lupa Password?</a></html>");
-        lblLupaPass.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-        lblLupaPass.setBounds(50, 335, 200, 25);
-        lblLupaPass.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        lblLupaPass.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                prosesLupaPassword();
-            }
-        });
-        rightPanel.add(lblLupaPass);
-
-        add(rightPanel, BorderLayout.CENTER);
-    }
-
-    private void prosesLogin() {
-        String username = txtUsername.getText().trim();
-        String password = new String(txtPassword.getPassword()).trim();
-
-        if (username.isEmpty() || password.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Username dan Password wajib diisi!", "Peringatan", JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-
-        String query = "SELECT * FROM users WHERE username = ? AND password = ?";
-        try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(query)) {
-
-            pstmt.setString(1, username);
-            pstmt.setString(2, password);
-            ResultSet rs = pstmt.executeQuery();
-
-            if (rs.next()) {
-                String role = rs.getString("role");
-                JOptionPane.showMessageDialog(this, "Login Berhasil!");
-                dispose();
-
-                if ("admin".equalsIgnoreCase(role)) {
-                    new AdminDashboardFrame().setVisible(true);
-                } else {
-                    new PelaporDashboardFrame(username).setVisible(true);
-                }
-            } else {
-                JOptionPane.showMessageDialog(this, "Username atau Password salah!", "Error", JOptionPane.ERROR_MESSAGE);
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-            JOptionPane.showMessageDialog(this, "Koneksi database gagal: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-        }
-    }
-
-    private void prosesLupaPassword() {
-        String username = JOptionPane.showInputDialog(this, "Masukkan Username akun Anda:");
-        if (username != null && !username.trim().isEmpty()) {
-            String query = "SELECT password FROM users WHERE username = ?";
-            try (Connection conn = DatabaseConnection.getConnection();
-                 PreparedStatement pstmt = conn.prepareStatement(query)) {
-                pstmt.setString(1, username.trim());
-                ResultSet rs = pstmt.executeQuery();
-                if (rs.next()) {
-                    String passLama = rs.getString("password");
-                    JOptionPane.showMessageDialog(this, "Password untuk akun '" + username + "' adalah: " + passLama);
-                } else {
-                    JOptionPane.showMessageDialog(this, "Username tidak ditemukan.", "Informasi", JOptionPane.WARNING_MESSAGE);
-                }
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
->>>>>>> d0438a77b2aacef5cdd1c847833573b6a69a68de
         }
     }
 }

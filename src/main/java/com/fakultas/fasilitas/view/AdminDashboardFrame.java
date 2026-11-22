@@ -3,29 +3,18 @@ package com.fakultas.fasilitas.view;
 import com.fakultas.fasilitas.model.DatabaseConnection;
 
 import javax.swing.*;
-<<<<<<< HEAD
 import java.awt.*;
 import java.sql.*;
+import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.util.*;
 import java.util.List;
-=======
-import javax.swing.table.DefaultTableModel;
-import java.awt.*;
-import java.sql.*;
-import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
->>>>>>> d0438a77b2aacef5cdd1c847833573b6a69a68de
 
 public class AdminDashboardFrame extends JFrame {
-    private JPanel cardPanel;
-    private CardLayout cardLayout;
+    private final JPanel cardPanel;
+    private final CardLayout cardLayout;
 
     private JPanel panelListLaporan, panelListJadwal, panelListUser, panelHistoryBulanan;
-<<<<<<< HEAD
     private JTextField txtIdLaporanJadwal, txtTanggalPerbaikan;
     private JComboBox<String> cbTeknisiAnggota;
     private JTextField txtNewNim;
@@ -33,32 +22,11 @@ public class AdminDashboardFrame extends JFrame {
 
     private String selectedIdJadwal = "";
     private final int adminId;
-    private final String adminUsername;
-
-    public AdminDashboardFrame() {
-        this(1, "admin");
-    }
 
     public AdminDashboardFrame(int adminId, String adminUsername) {
         this.adminId = adminId;
-        this.adminUsername = adminUsername;
 
         setTitle("JagaRuang - Panel Admin (" + adminUsername + ")");
-=======
-    private JTable tblUser;
-    private DefaultTableModel modelUser;
-
-    private JTextField txtIdLaporanJadwal, txtTanggalPerbaikan;
-    private JComboBox<String> cbTeknisiAnggota;
-
-    private JTextField txtNewUsername;
-    private JPasswordField txtNewPassword;
-
-    private String selectedIdJadwal = "";
-
-    public AdminDashboardFrame() {
-        setTitle("JagaRuang - Panel Admin");
->>>>>>> d0438a77b2aacef5cdd1c847833573b6a69a68de
         setSize(1200, 720);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
@@ -70,7 +38,10 @@ public class AdminDashboardFrame extends JFrame {
         sidebar.setLayout(new GridBagLayout());
 
         GridBagConstraints gbc = new GridBagConstraints();
-        gbc.gridx = 0; gbc.gridy = 0; gbc.anchor = GridBagConstraints.WEST; gbc.insets = new Insets(10, 20, 10, 20);
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.anchor = GridBagConstraints.WEST;
+        gbc.insets = new Insets(10, 20, 10, 20);
 
         JLabel lblBrand = new JLabel("JagaRuang");
         lblBrand.setForeground(Color.WHITE);
@@ -82,30 +53,39 @@ public class AdminDashboardFrame extends JFrame {
         lblSub.setForeground(new Color(16, 185, 129));
         sidebar.add(lblSub, gbc);
 
-        gbc.gridy = 2; gbc.insets = new Insets(30, 20, 10, 20);
+        gbc.gridy = 2;
+        gbc.insets = new Insets(30, 20, 10, 20);
         JButton btnLaporan = createNavButton("Laporan Masuk");
         sidebar.add(btnLaporan, gbc);
 
-        gbc.gridy = 3; gbc.insets = new Insets(5, 20, 10, 20);
+        gbc.gridy = 3;
+        gbc.insets = new Insets(5, 20, 10, 20);
         JButton btnJadwal = createNavButton("Jadwal & Perbaikan");
         sidebar.add(btnJadwal, gbc);
 
-        gbc.gridy = 4; gbc.insets = new Insets(5, 20, 10, 20);
+        gbc.gridy = 4;
+        gbc.insets = new Insets(5, 20, 10, 20);
         JButton btnHistory = createNavButton("History Bulanan");
         sidebar.add(btnHistory, gbc);
 
-        gbc.gridy = 5; gbc.insets = new Insets(5, 20, 10, 20);
+        gbc.gridy = 5;
+        gbc.insets = new Insets(5, 20, 10, 20);
         JButton btnAkun = createNavButton("Manajemen Akun");
         sidebar.add(btnAkun, gbc);
 
-        gbc.gridy = 6; gbc.weighty = 1.0;
+        gbc.gridy = 6;
+        gbc.weighty = 1.0;
         sidebar.add(new JLabel(), gbc);
 
-        gbc.gridy = 7; gbc.weighty = 0; gbc.insets = new Insets(10, 20, 20, 20);
+        gbc.gridy = 7;
+        gbc.weighty = 0;
+        gbc.insets = new Insets(10, 20, 20, 20);
         JButton btnLogout = new JButton("Logout");
         btnLogout.setBackground(new Color(239, 68, 68));
         btnLogout.setForeground(Color.WHITE);
-        btnLogout.setFocusPainted(false); btnLogout.setOpaque(true); btnLogout.setBorderPainted(false);
+        btnLogout.setFocusPainted(false);
+        btnLogout.setOpaque(true);
+        btnLogout.setBorderPainted(false);
         btnLogout.setPreferredSize(new Dimension(260, 38));
         sidebar.add(btnLogout, gbc);
 
@@ -117,14 +97,22 @@ public class AdminDashboardFrame extends JFrame {
         cardPanel.add(initHistoryBulananPanel(), "HISTORY");
         cardPanel.add(initAkunCardPanel(), "AKUN");
 
-        btnLaporan.addActionListener(e -> { cardLayout.show(cardPanel, "LAPORAN"); muatDataAdminCard(); });
-        btnJadwal.addActionListener(e -> { cardLayout.show(cardPanel, "JADWAL"); muatDataAdminCard(); });
-<<<<<<< HEAD
-        btnHistory.addActionListener(e -> { cardLayout.show(cardPanel, "HISTORY"); muatGridHistoryBulanan(Calendar.getInstance()); });
-=======
-        btnHistory.addActionListener(e -> { cardLayout.show(cardPanel, "HISTORY"); muatGridHistoryBulanan(java.util.Calendar.getInstance()); });
->>>>>>> d0438a77b2aacef5cdd1c847833573b6a69a68de
-        btnAkun.addActionListener(e -> { cardLayout.show(cardPanel, "AKUN"); muatDataUserCard(); });
+        btnLaporan.addActionListener(e -> {
+            cardLayout.show(cardPanel, "LAPORAN");
+            muatDataAdminCard();
+        });
+        btnJadwal.addActionListener(e -> {
+            cardLayout.show(cardPanel, "JADWAL");
+            muatDataAdminCard();
+        });
+        btnHistory.addActionListener(e -> {
+            cardLayout.show(cardPanel, "HISTORY");
+            muatGridHistoryBulanan(Calendar.getInstance());
+        });
+        btnAkun.addActionListener(e -> {
+            cardLayout.show(cardPanel, "AKUN");
+            muatDataUserCard();
+        });
 
         btnLogout.addActionListener(e -> {
             dispose();
@@ -142,7 +130,9 @@ public class AdminDashboardFrame extends JFrame {
         JButton btn = new JButton(text);
         btn.setForeground(Color.WHITE);
         btn.setBackground(new Color(15, 118, 110));
-        btn.setFocusPainted(false); btn.setOpaque(true); btn.setBorderPainted(false);
+        btn.setFocusPainted(false);
+        btn.setOpaque(true);
+        btn.setBorderPainted(false);
         btn.setHorizontalAlignment(SwingConstants.LEFT);
         btn.setFont(new Font("Segoe UI", Font.BOLD, 13));
         btn.setPreferredSize(new Dimension(260, 42));
@@ -231,7 +221,9 @@ public class AdminDashboardFrame extends JFrame {
         JButton btnSimpanJadwal = new JButton("Simpan Jadwal");
         btnSimpanJadwal.setBackground(new Color(16, 185, 129));
         btnSimpanJadwal.setForeground(Color.WHITE);
-        btnSimpanJadwal.setFocusPainted(false); btnSimpanJadwal.setOpaque(true); btnSimpanJadwal.setBorderPainted(false);
+        btnSimpanJadwal.setFocusPainted(false);
+        btnSimpanJadwal.setOpaque(true);
+        btnSimpanJadwal.setBorderPainted(false);
         btnSimpanJadwal.setBounds(430, 70, 160, 28);
         btnSimpanJadwal.addActionListener(e -> simpanJadwalPerbaikanCard());
         panelFormJadwal.add(btnSimpanJadwal);
@@ -243,17 +235,15 @@ public class AdminDashboardFrame extends JFrame {
         JButton btnSelesai = new JButton("Tandai Selesai Perbaikan");
         btnSelesai.setBackground(new Color(15, 118, 110));
         btnSelesai.setForeground(Color.WHITE);
-        btnSelesai.setFocusPainted(false); btnSelesai.setOpaque(true); btnSelesai.setBorderPainted(false);
+        btnSelesai.setFocusPainted(false);
+        btnSelesai.setOpaque(true);
+        btnSelesai.setBorderPainted(false);
         btnSelesai.setPreferredSize(new Dimension(200, 38));
         btnSelesai.addActionListener(e -> tandaiSelesaiPerbaikan());
         panelBtnSelesai.add(btnSelesai);
 
         panelBottomJadwal.add(panelBtnSelesai, BorderLayout.SOUTH);
         panel.add(panelBottomJadwal, BorderLayout.SOUTH);
-<<<<<<< HEAD
-=======
-
->>>>>>> d0438a77b2aacef5cdd1c847833573b6a69a68de
         return panel;
     }
 
@@ -266,126 +256,68 @@ public class AdminDashboardFrame extends JFrame {
         JPanel panelHeader = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 10));
         panelHeader.setBackground(new Color(6, 78, 59));
 
-<<<<<<< HEAD
         final Calendar cal = Calendar.getInstance();
-=======
-        final java.util.Calendar cal = java.util.Calendar.getInstance();
-
->>>>>>> d0438a77b2aacef5cdd1c847833573b6a69a68de
         JLabel lblBulanTahun = new JLabel();
         lblBulanTahun.setForeground(Color.WHITE);
         lblBulanTahun.setFont(new Font("Segoe UI", Font.BOLD, 15));
 
         JButton btnPrev = new JButton("<");
         JButton btnNext = new JButton(">");
-        btnPrev.setFocusPainted(false); btnNext.setFocusPainted(false);
+        btnPrev.setFocusPainted(false);
+        btnNext.setFocusPainted(false);
 
         panelHeader.add(btnPrev);
         panelHeader.add(lblBulanTahun);
         panelHeader.add(btnNext);
         dialogKalender.add(panelHeader, BorderLayout.NORTH);
 
-<<<<<<< HEAD
-=======
-        JPanel panelGridHari = new JPanel(new GridLayout(1, 7, 2, 2));
-        panelGridHari.setBackground(new Color(226, 232, 240));
-        String[] namaHari = {"Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"};
-        for (String h : namaHari) {
-            JLabel lblH = new JLabel(h, SwingConstants.CENTER);
-            lblH.setFont(new Font("Segoe UI", Font.BOLD, 12));
-            lblH.setForeground(new Color(15, 118, 110));
-            panelGridHari.add(lblH);
-        }
-        dialogKalender.add(panelGridHari, BorderLayout.NORTH);
-
->>>>>>> d0438a77b2aacef5cdd1c847833573b6a69a68de
         JPanel panelGridTanggal = new JPanel(new GridLayout(6, 7, 5, 5));
         panelGridTanggal.setBackground(Color.WHITE);
         panelGridTanggal.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
         Runnable renderKalender = () -> {
             panelGridTanggal.removeAll();
-<<<<<<< HEAD
-            lblBulanTahun.setText(new java.text.SimpleDateFormat("MMMM yyyy").format(cal.getTime()));
+            lblBulanTahun.setText(new SimpleDateFormat("MMMM yyyy").format(cal.getTime()));
 
             Calendar cTemp = (Calendar) cal.clone();
             cTemp.set(Calendar.DAY_OF_MONTH, 1);
             int hariPertama = cTemp.get(Calendar.DAY_OF_WEEK) - 1;
             int maxHari = cTemp.getActualMaximum(Calendar.DAY_OF_MONTH);
 
-            for (int i = 0; i < hariPertama; i++) panelGridTanggal.add(new JLabel(""));
-
-            int tahunIni = cal.get(Calendar.YEAR);
-            int bulanIni = cal.get(Calendar.MONTH);
-=======
-
-            java.text.SimpleDateFormat sdfMonth = new java.text.SimpleDateFormat("MMMM yyyy");
-            lblBulanTahun.setText(sdfMonth.format(cal.getTime()));
-
-            java.util.Calendar cTemp = (java.util.Calendar) cal.clone();
-            cTemp.set(java.util.Calendar.DAY_OF_MONTH, 1);
-            int hariPertama = cTemp.get(java.util.Calendar.DAY_OF_WEEK) - 1;
-            int maxHari = cTemp.getActualMaximum(java.util.Calendar.DAY_OF_MONTH);
-
             for (int i = 0; i < hariPertama; i++) {
                 panelGridTanggal.add(new JLabel(""));
             }
 
-            int tahunIni = cal.get(java.util.Calendar.YEAR);
-            int bulanIni = cal.get(java.util.Calendar.MONTH);
->>>>>>> d0438a77b2aacef5cdd1c847833573b6a69a68de
+            int tahunIni = cal.get(Calendar.YEAR);
+            int bulanIni = cal.get(Calendar.MONTH);
 
             for (int i = 1; i <= maxHari; i++) {
-                final int day = i;
-                JButton btnDay = new JButton(String.valueOf(day));
+                JButton btnDay = new JButton(String.valueOf(i));
                 btnDay.setFocusPainted(false);
                 btnDay.setBackground(new Color(241, 245, 249));
                 btnDay.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-<<<<<<< HEAD
                 btnDay.addActionListener(e -> {
-                    txtTanggalPerbaikan.setText(String.format("%d-%02d-%02d", tahunIni, (bulanIni + 1), day));
+                    txtTanggalPerbaikan.setText(String.format("%d-%02d-%02d", tahunIni, bulanIni + 1, Integer.parseInt(btnDay.getText())));
                     dialogKalender.dispose();
                 });
                 panelGridTanggal.add(btnDay);
             }
 
-            for (int i = hariPertama + maxHari; i < 42; i++) panelGridTanggal.add(new JLabel(""));
-=======
-
-                btnDay.addActionListener(e -> {
-                    String tglPilih = String.format("%d-%02d-%02d", tahunIni, (bulanIni + 1), day);
-                    txtTanggalPerbaikan.setText(tglPilih);
-                    dialogKalender.dispose();
-                });
-
-                panelGridTanggal.add(btnDay);
-            }
-
-            int totalKotakTerisi = hariPertama + maxHari;
-            int sisaKotak = 42 - totalKotakTerisi;
-            for (int i = 0; i < sisaKotak; i++) {
+            for (int i = hariPertama + maxHari; i < 42; i++) {
                 panelGridTanggal.add(new JLabel(""));
             }
-
->>>>>>> d0438a77b2aacef5cdd1c847833573b6a69a68de
             panelGridTanggal.revalidate();
             panelGridTanggal.repaint();
         };
 
-<<<<<<< HEAD
-        btnPrev.addActionListener(e -> { cal.add(Calendar.MONTH, -1); renderKalender.run(); });
-        btnNext.addActionListener(e -> { cal.add(Calendar.MONTH, 1); renderKalender.run(); });
-=======
         btnPrev.addActionListener(e -> {
-            cal.add(java.util.Calendar.MONTH, -1);
+            cal.add(Calendar.MONTH, -1);
             renderKalender.run();
         });
-
         btnNext.addActionListener(e -> {
-            cal.add(java.util.Calendar.MONTH, 1);
+            cal.add(Calendar.MONTH, 1);
             renderKalender.run();
         });
->>>>>>> d0438a77b2aacef5cdd1c847833573b6a69a68de
 
         renderKalender.run();
         dialogKalender.add(panelGridTanggal, BorderLayout.CENTER);
@@ -405,23 +337,14 @@ public class AdminDashboardFrame extends JFrame {
         panelHistoryBulanan.setBackground(Color.WHITE);
         panelHistoryBulanan.setBorder(BorderFactory.createLineBorder(new Color(226, 232, 240)));
 
-<<<<<<< HEAD
         muatGridHistoryBulanan(Calendar.getInstance());
-=======
-        muatGridHistoryBulanan(java.util.Calendar.getInstance());
-
->>>>>>> d0438a77b2aacef5cdd1c847833573b6a69a68de
         panel.add(panelHistoryBulanan, BorderLayout.CENTER);
         return panel;
     }
 
     private void tampilkanPopUpDetailTanggal(String tglKey) {
         JDialog dialogDetail = new JDialog(this, "Rincian Tanggal: " + tglKey, true);
-<<<<<<< HEAD
         dialogDetail.setSize(380, 360);
-=======
-        dialogDetail.setSize(380, 320);
->>>>>>> d0438a77b2aacef5cdd1c847833573b6a69a68de
         dialogDetail.setLocationRelativeTo(this);
         dialogDetail.setLayout(new BorderLayout(10, 10));
 
@@ -432,7 +355,6 @@ public class AdminDashboardFrame extends JFrame {
 
         List<String> listMasuk = new ArrayList<>();
         List<String> listSelesai = new ArrayList<>();
-<<<<<<< HEAD
         List<String> listDitolak = new ArrayList<>();
 
         String sql = "SELECT id, status FROM laporan WHERE tanggal_lapor = ?";
@@ -440,25 +362,14 @@ public class AdminDashboardFrame extends JFrame {
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, tglKey);
             try (ResultSet rs = ps.executeQuery()) {
-=======
-
-        String query = "SELECT id, status FROM laporan WHERE tanggal = ?";
-        try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(query)) {
-            pstmt.setString(1, tglKey);
-            try (ResultSet rs = pstmt.executeQuery()) {
->>>>>>> d0438a77b2aacef5cdd1c847833573b6a69a68de
                 while (rs.next()) {
                     String id = rs.getString("id");
                     String status = rs.getString("status");
                     listMasuk.add(id);
                     if ("Selesai".equalsIgnoreCase(status)) {
                         listSelesai.add(id);
-<<<<<<< HEAD
                     } else if ("Ditolak".equalsIgnoreCase(status)) {
                         listDitolak.add(id);
-=======
->>>>>>> d0438a77b2aacef5cdd1c847833573b6a69a68de
                     }
                 }
             }
@@ -475,7 +386,6 @@ public class AdminDashboardFrame extends JFrame {
         lblInfoSelesai.setFont(new Font("Segoe UI", Font.PLAIN, 13));
         lblInfoSelesai.setForeground(new Color(5, 150, 105));
 
-<<<<<<< HEAD
         JLabel lblInfoDitolak = new JLabel("<html><b>Laporan Ditolak (" + listDitolak.size() + "):</b><br>" +
                 (listDitolak.isEmpty() ? "-" : String.join(", ", listDitolak)) + "</html>");
         lblInfoDitolak.setFont(new Font("Segoe UI", Font.PLAIN, 13));
@@ -486,48 +396,28 @@ public class AdminDashboardFrame extends JFrame {
         panelContent.add(lblInfoSelesai);
         panelContent.add(Box.createRigidArea(new Dimension(0, 15)));
         panelContent.add(lblInfoDitolak);
-=======
-        panelContent.add(lblInfoMasuk);
-        panelContent.add(Box.createRigidArea(new Dimension(0, 15)));
-        panelContent.add(lblInfoSelesai);
->>>>>>> d0438a77b2aacef5cdd1c847833573b6a69a68de
 
         dialogDetail.add(new JScrollPane(panelContent), BorderLayout.CENTER);
 
         JButton btnTutup = new JButton("Tutup");
-<<<<<<< HEAD
         btnTutup.setBackground(new Color(16, 185, 129));
         btnTutup.setForeground(Color.WHITE);
-        btnTutup.setFocusPainted(false); btnTutup.setOpaque(true); btnTutup.setBorderPainted(false);
-=======
-        btnTutup.setBackground(new Color(16, 185, 129)); // Hijau Emerald
-        btnTutup.setForeground(Color.WHITE);            // Teks Putih
         btnTutup.setFocusPainted(false);
         btnTutup.setOpaque(true);
         btnTutup.setBorderPainted(false);
->>>>>>> d0438a77b2aacef5cdd1c847833573b6a69a68de
         btnTutup.addActionListener(e -> dialogDetail.dispose());
 
         JPanel panelBottom = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         panelBottom.add(btnTutup);
         dialogDetail.add(panelBottom, BorderLayout.SOUTH);
-<<<<<<< HEAD
         dialogDetail.setVisible(true);
     }
 
     private void muatGridHistoryBulanan(Calendar cal) {
-=======
-
-        dialogDetail.setVisible(true);
-    }
-
-    private void muatGridHistoryBulanan(java.util.Calendar cal) {
->>>>>>> d0438a77b2aacef5cdd1c847833573b6a69a68de
         panelHistoryBulanan.removeAll();
 
         Map<String, Integer> mapJmlMasuk = new HashMap<>();
         Map<String, Integer> mapJmlSelesai = new HashMap<>();
-<<<<<<< HEAD
         Map<String, Integer> mapJmlDitolak = new HashMap<>();
 
         String sql = "SELECT tanggal_lapor, COUNT(*) AS jml_masuk, " +
@@ -542,17 +432,6 @@ public class AdminDashboardFrame extends JFrame {
                 mapJmlMasuk.put(tgl, rs.getInt("jml_masuk"));
                 mapJmlSelesai.put(tgl, rs.getInt("jml_selesai"));
                 mapJmlDitolak.put(tgl, rs.getInt("jml_ditolak"));
-=======
-
-        String query = "SELECT tanggal, COUNT(*) as jml_masuk, SUM(status='Selesai') as jml_selesai FROM laporan GROUP BY tanggal";
-        try (Connection conn = DatabaseConnection.getConnection();
-             Statement stmt = conn.createStatement();
-             ResultSet rs = stmt.executeQuery(query)) {
-            while (rs.next()) {
-                String tgl = rs.getString("tanggal");
-                mapJmlMasuk.put(tgl, rs.getInt("jml_masuk"));
-                mapJmlSelesai.put(tgl, rs.getInt("jml_selesai"));
->>>>>>> d0438a77b2aacef5cdd1c847833573b6a69a68de
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -561,17 +440,14 @@ public class AdminDashboardFrame extends JFrame {
         JPanel panelHeader = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 12));
         panelHeader.setBackground(new Color(6, 78, 59));
 
-<<<<<<< HEAD
-        JLabel lblBulanTahun = new JLabel(new java.text.SimpleDateFormat("MMMM yyyy").format(cal.getTime()));
-=======
-        JLabel lblBulanTahun = new JLabel();
->>>>>>> d0438a77b2aacef5cdd1c847833573b6a69a68de
+        JLabel lblBulanTahun = new JLabel(new SimpleDateFormat("MMMM yyyy").format(cal.getTime()));
         lblBulanTahun.setForeground(Color.WHITE);
         lblBulanTahun.setFont(new Font("Segoe UI", Font.BOLD, 16));
 
         JButton btnPrev = new JButton("< Bulan Sebelumnya");
         JButton btnNext = new JButton("Bulan Berikutnya >");
-        btnPrev.setFocusPainted(false); btnNext.setFocusPainted(false);
+        btnPrev.setFocusPainted(false);
+        btnNext.setFocusPainted(false);
 
         panelHeader.add(btnPrev);
         panelHeader.add(lblBulanTahun);
@@ -583,12 +459,7 @@ public class AdminDashboardFrame extends JFrame {
         JPanel panelGridHari = new JPanel(new GridLayout(1, 7, 4, 4));
         panelGridHari.setBackground(new Color(241, 245, 249));
         panelGridHari.setBorder(BorderFactory.createEmptyBorder(8, 10, 0, 10));
-<<<<<<< HEAD
         for (String h : new String[]{"Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"}) {
-=======
-        String[] namaHari = {"Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"};
-        for (String h : namaHari) {
->>>>>>> d0438a77b2aacef5cdd1c847833573b6a69a68de
             JLabel lblH = new JLabel(h, SwingConstants.CENTER);
             lblH.setFont(new Font("Segoe UI", Font.BOLD, 13));
             lblH.setForeground(new Color(15, 118, 110));
@@ -600,20 +471,10 @@ public class AdminDashboardFrame extends JFrame {
         panelGrid.setBackground(new Color(241, 245, 249));
         panelGrid.setBorder(BorderFactory.createEmptyBorder(8, 10, 10, 10));
 
-<<<<<<< HEAD
         Calendar cTemp = (Calendar) cal.clone();
         cTemp.set(Calendar.DAY_OF_MONTH, 1);
         int hariPertama = cTemp.get(Calendar.DAY_OF_WEEK) - 1;
         int maxHari = cTemp.getActualMaximum(Calendar.DAY_OF_MONTH);
-=======
-        java.text.SimpleDateFormat sdfMonth = new java.text.SimpleDateFormat("MMMM yyyy");
-        lblBulanTahun.setText(sdfMonth.format(cal.getTime()));
-
-        java.util.Calendar cTemp = (java.util.Calendar) cal.clone();
-        cTemp.set(java.util.Calendar.DAY_OF_MONTH, 1);
-        int hariPertama = cTemp.get(java.util.Calendar.DAY_OF_WEEK) - 1;
-        int maxHari = cTemp.getActualMaximum(java.util.Calendar.DAY_OF_MONTH);
->>>>>>> d0438a77b2aacef5cdd1c847833573b6a69a68de
 
         for (int i = 0; i < hariPertama; i++) {
             JPanel pKosong = new JPanel();
@@ -621,26 +482,14 @@ public class AdminDashboardFrame extends JFrame {
             panelGrid.add(pKosong);
         }
 
-<<<<<<< HEAD
         int tahunIni = cal.get(Calendar.YEAR);
         int bulanIni = cal.get(Calendar.MONTH);
-=======
-        int tahunIni = cal.get(java.util.Calendar.YEAR);
-        int bulanIni = cal.get(java.util.Calendar.MONTH);
->>>>>>> d0438a77b2aacef5cdd1c847833573b6a69a68de
 
         for (int i = 1; i <= maxHari; i++) {
-            final int day = i;
-            String tglKey = String.format("%d-%02d-%02d", tahunIni, (bulanIni + 1), day);
-<<<<<<< HEAD
+            String tglKey = String.format("%d-%02d-%02d", tahunIni, bulanIni + 1, i);
             int jmlMasuk = mapJmlMasuk.getOrDefault(tglKey, 0);
             int jmlSelesai = mapJmlSelesai.getOrDefault(tglKey, 0);
             int jmlDitolak = mapJmlDitolak.getOrDefault(tglKey, 0);
-=======
-
-            int jmlMasuk = mapJmlMasuk.getOrDefault(tglKey, 0);
-            int jmlSelesai = mapJmlSelesai.getOrDefault(tglKey, 0);
->>>>>>> d0438a77b2aacef5cdd1c847833573b6a69a68de
 
             JButton btnDay = new JButton();
             btnDay.setLayout(new BorderLayout());
@@ -649,59 +498,38 @@ public class AdminDashboardFrame extends JFrame {
             btnDay.setBorder(BorderFactory.createLineBorder(new Color(203, 213, 225)));
             btnDay.setCursor(new Cursor(Cursor.HAND_CURSOR));
 
-            JLabel lblNum = new JLabel(" " + day);
+            JLabel lblNum = new JLabel(" " + i);
             lblNum.setFont(new Font("Segoe UI", Font.BOLD, 12));
             lblNum.setForeground(new Color(15, 23, 42));
             btnDay.add(lblNum, BorderLayout.NORTH);
 
-<<<<<<< HEAD
             if (jmlMasuk > 0 || jmlSelesai > 0 || jmlDitolak > 0) {
                 JLabel lblInfo = new JLabel(String.format(
                         "<html><div style='font-size:9px; padding:2px 3px; color:#065f46;'>Masuk: <b>%d</b><br>Selesai: <b>%d</b><br><font color='#dc2626'>Ditolak: <b>%d</b></font></div></html>",
                         jmlMasuk, jmlSelesai, jmlDitolak
                 ));
-=======
-            if (jmlMasuk > 0 || jmlSelesai > 0) {
-                JLabel lblInfo = new JLabel(String.format("<html><div style='font-size:9px; padding:3px; color:#065f46;'>Masuk: <b>%d</b><br>Selesai: <b>%d</b></div></html>", jmlMasuk, jmlSelesai));
->>>>>>> d0438a77b2aacef5cdd1c847833573b6a69a68de
                 btnDay.add(lblInfo, BorderLayout.CENTER);
                 btnDay.setBackground(new Color(209, 250, 229));
             }
 
             btnDay.addActionListener(e -> tampilkanPopUpDetailTanggal(tglKey));
-<<<<<<< HEAD
             panelGrid.add(btnDay);
         }
 
         for (int i = hariPertama + maxHari; i < 42; i++) {
-=======
-
-            panelGrid.add(btnDay);
-        }
-
-        int totalKotakTerisi = hariPertama + maxHari;
-        int sisaKotak = 42 - totalKotakTerisi;
-        for (int i = 0; i < sisaKotak; i++) {
->>>>>>> d0438a77b2aacef5cdd1c847833573b6a69a68de
             JPanel pKosong = new JPanel();
             pKosong.setBackground(Color.WHITE);
             panelGrid.add(pKosong);
         }
 
-<<<<<<< HEAD
-        btnPrev.addActionListener(e -> { cal.add(Calendar.MONTH, -1); muatGridHistoryBulanan(cal); });
-        btnNext.addActionListener(e -> { cal.add(Calendar.MONTH, 1); muatGridHistoryBulanan(cal); });
-=======
         btnPrev.addActionListener(e -> {
-            cal.add(java.util.Calendar.MONTH, -1);
+            cal.add(Calendar.MONTH, -1);
             muatGridHistoryBulanan(cal);
         });
-
         btnNext.addActionListener(e -> {
-            cal.add(java.util.Calendar.MONTH, 1);
+            cal.add(Calendar.MONTH, 1);
             muatGridHistoryBulanan(cal);
         });
->>>>>>> d0438a77b2aacef5cdd1c847833573b6a69a68de
 
         panelCenterContainer.add(panelGrid, BorderLayout.CENTER);
         panelHistoryBulanan.add(panelCenterContainer, BorderLayout.CENTER);
@@ -732,7 +560,6 @@ public class AdminDashboardFrame extends JFrame {
         panelFormAdd.setBackground(Color.WHITE);
         panelFormAdd.setBorder(BorderFactory.createTitledBorder("Tambah Akun Pelapor Baru"));
 
-<<<<<<< HEAD
         JLabel lblNimNew = new JLabel("NIM:");
         lblNimNew.setBounds(15, 25, 80, 20);
         panelFormAdd.add(lblNimNew);
@@ -740,37 +567,22 @@ public class AdminDashboardFrame extends JFrame {
         txtNewNim = new JTextField();
         txtNewNim.setBounds(100, 25, 190, 28);
         panelFormAdd.add(txtNewNim);
-=======
-        JLabel lblUserNew = new JLabel("Username:");
-        lblUserNew.setBounds(15, 25, 80, 20);
-        panelFormAdd.add(lblUserNew);
-
-        txtNewUsername = new JTextField();
-        txtNewUsername.setBounds(95, 25, 180, 28);
-        panelFormAdd.add(txtNewUsername);
->>>>>>> d0438a77b2aacef5cdd1c847833573b6a69a68de
 
         JLabel lblPassNew = new JLabel("Password:");
         lblPassNew.setBounds(15, 65, 80, 20);
         panelFormAdd.add(lblPassNew);
 
         txtNewPassword = new JPasswordField();
-<<<<<<< HEAD
         txtNewPassword.setBounds(100, 65, 190, 28);
-=======
-        txtNewPassword.setBounds(95, 65, 180, 28);
->>>>>>> d0438a77b2aacef5cdd1c847833573b6a69a68de
         panelFormAdd.add(txtNewPassword);
 
         JButton btnSimpanAkun = new JButton("Simpan Akun");
         btnSimpanAkun.setBackground(new Color(16, 185, 129));
         btnSimpanAkun.setForeground(Color.WHITE);
-        btnSimpanAkun.setFocusPainted(false); btnSimpanAkun.setOpaque(true); btnSimpanAkun.setBorderPainted(false);
-<<<<<<< HEAD
+        btnSimpanAkun.setFocusPainted(false);
+        btnSimpanAkun.setOpaque(true);
+        btnSimpanAkun.setBorderPainted(false);
         btnSimpanAkun.setBounds(100, 110, 190, 35);
-=======
-        btnSimpanAkun.setBounds(95, 110, 180, 35);
->>>>>>> d0438a77b2aacef5cdd1c847833573b6a69a68de
         btnSimpanAkun.addActionListener(e -> tambahAkunPelapor());
         panelFormAdd.add(btnSimpanAkun);
 
@@ -780,7 +592,9 @@ public class AdminDashboardFrame extends JFrame {
         JButton btnHapusAkun = new JButton("Hapus Akun Terpilih");
         btnHapusAkun.setBackground(new Color(239, 68, 68));
         btnHapusAkun.setForeground(Color.WHITE);
-        btnHapusAkun.setFocusPainted(false); btnHapusAkun.setOpaque(true); btnHapusAkun.setBorderPainted(false);
+        btnHapusAkun.setFocusPainted(false);
+        btnHapusAkun.setOpaque(true);
+        btnHapusAkun.setBorderPainted(false);
         btnHapusAkun.setPreferredSize(new Dimension(180, 40));
         panelAction.add(btnHapusAkun);
 
@@ -788,7 +602,6 @@ public class AdminDashboardFrame extends JFrame {
         panelBottomContainer.add(panelAction);
         panelBottomContainer.setPreferredSize(new Dimension(0, 180));
         panel.add(panelBottomContainer, BorderLayout.SOUTH);
-<<<<<<< HEAD
         return panel;
     }
 
@@ -797,17 +610,12 @@ public class AdminDashboardFrame extends JFrame {
             return namaLengkap.trim();
         }
         return "Mahasiswa";
-=======
-
-        return panel;
->>>>>>> d0438a77b2aacef5cdd1c847833573b6a69a68de
     }
 
     private void muatDataAdminCard() {
         panelListLaporan.removeAll();
         panelListJadwal.removeAll();
 
-<<<<<<< HEAD
         String sql = "SELECT l.id, f.nama_fasilitas AS fasilitas, gr.nama_lokasi AS lokasi, " +
                 "l.tanggal_lapor AS tanggal, l.deskripsi, l.status, " +
                 "u.nim, u.nama_lengkap, pl.jadwal_perbaikan, pl.nama_teknisi " +
@@ -825,40 +633,21 @@ public class AdminDashboardFrame extends JFrame {
             while (rs.next()) {
                 String id = rs.getString("id");
                 String fasilitas = rs.getString("fasilitas");
-=======
-        String query = "SELECT * FROM laporan ORDER BY id ASC";
-        try (Connection conn = DatabaseConnection.getConnection();
-             Statement stmt = conn.createStatement();
-             ResultSet rs = stmt.executeQuery(query)) {
-
-            while (rs.next()) {
-                String id = rs.getString("id");
-                String fasilitas = rs.getString("jenis_fasilitas");
->>>>>>> d0438a77b2aacef5cdd1c847833573b6a69a68de
                 String lokasi = rs.getString("lokasi");
                 String tanggal = rs.getString("tanggal");
                 String deskripsi = rs.getString("deskripsi");
                 String status = rs.getString("status");
-<<<<<<< HEAD
                 String namaPelapor = formatNamaPelapor(rs.getString("nama_lengkap"), rs.getString("nim"));
                 String jadwal = rs.getString("jadwal_perbaikan");
                 String teknisi = rs.getString("nama_teknisi");
 
                 if ("Menunggu".equalsIgnoreCase(status)) {
                     JPanel cardLaporan = createAdminReportCardWithButtons(id, namaPelapor, fasilitas, lokasi, tanggal, deskripsi, status);
-=======
-                String catatan = rs.getString("catatan");
-                String keterangan = rs.getString("keterangan");
-
-                if ("Menunggu".equalsIgnoreCase(status)) {
-                    JPanel cardLaporan = createAdminReportCardWithButtons(id, fasilitas, lokasi, tanggal, deskripsi, status, keterangan);
->>>>>>> d0438a77b2aacef5cdd1c847833573b6a69a68de
                     cardLaporan.setMaximumSize(new Dimension(Integer.MAX_VALUE, 150));
                     panelListLaporan.add(cardLaporan);
                     panelListLaporan.add(Box.createRigidArea(new Dimension(0, 10)));
                 }
 
-<<<<<<< HEAD
                 if (!"Ditolak".equalsIgnoreCase(status)) {
                     JPanel cardJadwal = createAdminScheduleCard(id, namaPelapor, fasilitas, lokasi, status, jadwal, teknisi);
                     cardJadwal.setMaximumSize(new Dimension(Integer.MAX_VALUE, 130));
@@ -878,46 +667,19 @@ public class AdminDashboardFrame extends JFrame {
                     panelListJadwal.add(cardJadwal);
                     panelListJadwal.add(Box.createRigidArea(new Dimension(0, 10)));
                 }
-=======
-                JPanel cardJadwal = createAdminScheduleCard(id, fasilitas, lokasi, status, catatan, keterangan);
-                cardJadwal.setMaximumSize(new Dimension(Integer.MAX_VALUE, 130));
-
-                if ("Diproses".equalsIgnoreCase(status)) {
-                    cardJadwal.addMouseListener(new java.awt.event.MouseAdapter() {
-                        public void mouseClicked(java.awt.event.MouseEvent evt) {
-                            selectedIdJadwal = id;
-                            txtIdLaporanJadwal.setText(id);
-                            highlightSelectedCard(panelListJadwal, cardJadwal);
-                        }
-                    });
-                } else {
-                    cardJadwal.setCursor(new Cursor(Cursor.DEFAULT_CURSOR));
-                }
-
-                panelListJadwal.add(cardJadwal);
-                panelListJadwal.add(Box.createRigidArea(new Dimension(0, 10)));
->>>>>>> d0438a77b2aacef5cdd1c847833573b6a69a68de
             }
         } catch (SQLException e) {
             e.printStackTrace();
         }
 
-<<<<<<< HEAD
-        panelListLaporan.revalidate(); panelListLaporan.repaint();
-        panelListJadwal.revalidate(); panelListJadwal.repaint();
-    }
-
-    private JPanel createAdminReportCardWithButtons(String id, String namaPelapor, String fasilitas, String lokasi,
-                                                    String tanggal, String deskripsi, String status) {
-=======
         panelListLaporan.revalidate();
         panelListLaporan.repaint();
         panelListJadwal.revalidate();
         panelListJadwal.repaint();
     }
 
-    private JPanel createAdminReportCardWithButtons(String id, String fasilitas, String lokasi, String tanggal, String deskripsi, String status, String keterangan) {
->>>>>>> d0438a77b2aacef5cdd1c847833573b6a69a68de
+    private JPanel createAdminReportCardWithButtons(String id, String namaPelapor, String fasilitas, String lokasi,
+                                                    String tanggal, String deskripsi, String status) {
         JPanel card = new JPanel(new BorderLayout(10, 5));
         card.setBackground(Color.WHITE);
         card.setBorder(BorderFactory.createCompoundBorder(
@@ -925,18 +687,11 @@ public class AdminDashboardFrame extends JFrame {
                 BorderFactory.createEmptyBorder(10, 15, 10, 15)
         ));
 
-<<<<<<< HEAD
         JLabel lblHeader = new JLabel("<html><b>ID:</b> " + id + "   |   <b>Pelapor:</b> " + namaPelapor +
                 "   |   <font color='#64748B'>Tanggal: " + tanggal + "  |  Status: <b>" + status + "</b></font></html>");
         lblHeader.setFont(new Font("Segoe UI", Font.PLAIN, 12));
 
         JLabel lblBody = new JLabel("<html><b>Fasilitas:</b> " + fasilitas + "   |   <b>Lokasi:</b> " + lokasi +
-=======
-        JLabel lblHeader = new JLabel("<html><b>ID:</b> " + id + " &nbsp;&nbsp;|&nbsp;&nbsp; <font color='#64748B'>Tanggal: " + tanggal + " &nbsp;|&nbsp; Status: <b>" + status + "</b></font></html>");
-        lblHeader.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-
-        JLabel lblBody = new JLabel("<html><b>Fasilitas:</b> " + fasilitas + " &nbsp;&nbsp;|&nbsp;&nbsp; <b>Lokasi:</b> " + lokasi +
->>>>>>> d0438a77b2aacef5cdd1c847833573b6a69a68de
                 "<br><b>Keluhan:</b> " + deskripsi + "</html>");
         lblBody.setFont(new Font("Segoe UI", Font.PLAIN, 12));
 
@@ -944,22 +699,20 @@ public class AdminDashboardFrame extends JFrame {
         panelBtnCard.setOpaque(false);
 
         JButton btnTerimaCard = new JButton("Terima");
-        btnTerimaCard.setBackground(new Color(16, 185, 129)); btnTerimaCard.setForeground(Color.WHITE);
-        btnTerimaCard.setFocusPainted(false); btnTerimaCard.setOpaque(true); btnTerimaCard.setBorderPainted(false);
-<<<<<<< HEAD
+        btnTerimaCard.setBackground(new Color(16, 185, 129));
+        btnTerimaCard.setForeground(Color.WHITE);
+        btnTerimaCard.setFocusPainted(false);
+        btnTerimaCard.setOpaque(true);
+        btnTerimaCard.setBorderPainted(false);
         btnTerimaCard.addActionListener(e -> terimaLaporan(id));
-=======
-        btnTerimaCard.addActionListener(e -> updateStatusDirect(id, "Diproses", "Laporan diterima admin."));
->>>>>>> d0438a77b2aacef5cdd1c847833573b6a69a68de
 
         JButton btnTolakCard = new JButton("Tolak");
-        btnTolakCard.setBackground(new Color(239, 68, 68)); btnTolakCard.setForeground(Color.WHITE);
-        btnTolakCard.setFocusPainted(false); btnTolakCard.setOpaque(true); btnTolakCard.setBorderPainted(false);
-<<<<<<< HEAD
+        btnTolakCard.setBackground(new Color(239, 68, 68));
+        btnTolakCard.setForeground(Color.WHITE);
+        btnTolakCard.setFocusPainted(false);
+        btnTolakCard.setOpaque(true);
+        btnTolakCard.setBorderPainted(false);
         btnTolakCard.addActionListener(e -> tolakLaporanDenganFeedback(id));
-=======
-        btnTolakCard.addActionListener(e -> updateStatusDirect(id, "Ditolak", "Laporan ditolak oleh admin."));
->>>>>>> d0438a77b2aacef5cdd1c847833573b6a69a68de
 
         panelBtnCard.add(btnTerimaCard);
         panelBtnCard.add(btnTolakCard);
@@ -970,12 +723,8 @@ public class AdminDashboardFrame extends JFrame {
         return card;
     }
 
-<<<<<<< HEAD
     private JPanel createAdminScheduleCard(String id, String namaPelapor, String fasilitas, String lokasi,
                                            String status, String jadwal, String teknisi) {
-=======
-    private JPanel createAdminScheduleCard(String id, String fasilitas, String lokasi, String status, String catatan, String keterangan) {
->>>>>>> d0438a77b2aacef5cdd1c847833573b6a69a68de
         JPanel card = new JPanel(new BorderLayout(10, 5));
         card.setBackground(Color.WHITE);
         card.setBorder(BorderFactory.createCompoundBorder(
@@ -983,7 +732,6 @@ public class AdminDashboardFrame extends JFrame {
                 BorderFactory.createEmptyBorder(10, 15, 10, 15)
         ));
 
-<<<<<<< HEAD
         JLabel lblHeader = new JLabel("<html><b>ID:</b> " + id + "   |   <b>Pelapor:</b> " + namaPelapor +
                 "   |   <font color='#64748B'>Status: <b>" + status + "</b></font></html>");
         lblHeader.setFont(new Font("Segoe UI", Font.PLAIN, 12));
@@ -991,13 +739,6 @@ public class AdminDashboardFrame extends JFrame {
         JLabel lblBody = new JLabel("<html><b>Fasilitas:</b> " + fasilitas + "   |   <b>Lokasi:</b> " + lokasi +
                 "<br><font color='#059669'><b>Jadwal:</b> " + (jadwal != null && !jadwal.isBlank() ? jadwal : "-") +
                 "  |  <b>Teknisi:</b> " + (teknisi != null && !teknisi.isBlank() ? teknisi : "-") + "</font></html>");
-=======
-        JLabel lblHeader = new JLabel("<html><b>ID:</b> " + id + " &nbsp;&nbsp;|&nbsp;&nbsp; <font color='#64748B'>Status: <b>" + status + "</b></font></html>");
-        lblHeader.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-
-        JLabel lblBody = new JLabel("<html><b>Fasilitas:</b> " + fasilitas + " &nbsp;&nbsp;|&nbsp;&nbsp; <b>Lokasi:</b> " + lokasi +
-                "<br><font color='#059669'><b>Jadwal:</b> " + (catatan != null ? catatan : "-") + " &nbsp;|&nbsp; <b>Teknisi:</b> " + (keterangan != null ? keterangan : "-") + "</font></html>");
->>>>>>> d0438a77b2aacef5cdd1c847833573b6a69a68de
         lblBody.setFont(new Font("Segoe UI", Font.PLAIN, 12));
 
         card.add(lblHeader, BorderLayout.NORTH);
@@ -1007,7 +748,6 @@ public class AdminDashboardFrame extends JFrame {
 
     private void muatDataUserCard() {
         panelListUser.removeAll();
-<<<<<<< HEAD
         String sql = "SELECT nim, nama_lengkap, password_hash, status_akun " +
                 "FROM users WHERE role = 'pelapor' ORDER BY id ASC";
 
@@ -1018,17 +758,6 @@ public class AdminDashboardFrame extends JFrame {
                 String nim = rs.getString("nim");
                 String nama = rs.getString("nama_lengkap");
                 String namaTampil = (nama != null && !nama.isBlank()) ? nama : "-";
-=======
-        String query = "SELECT * FROM users WHERE role = 'pelapor' ORDER BY id ASC";
-        try (Connection conn = DatabaseConnection.getConnection();
-             Statement stmt = conn.createStatement();
-             ResultSet rs = stmt.executeQuery(query)) {
-
-            while (rs.next()) {
-                String username = rs.getString("username");
-                String password = rs.getString("password");
-                String status = rs.getString("status");
->>>>>>> d0438a77b2aacef5cdd1c847833573b6a69a68de
 
                 JPanel cardUser = new JPanel(new BorderLayout(10, 5));
                 cardUser.setBackground(Color.WHITE);
@@ -1038,14 +767,10 @@ public class AdminDashboardFrame extends JFrame {
                 ));
                 cardUser.setMaximumSize(new Dimension(Integer.MAX_VALUE, 70));
 
-<<<<<<< HEAD
                 JLabel lblBody = new JLabel("<html><b>NIM:</b> " + (nim != null ? nim : "-") +
                         "  |  <b>Nama:</b> " + namaTampil +
                         "  |  <b>Password:</b> " + rs.getString("password_hash") +
                         "  |  <b>Status:</b> " + rs.getString("status_akun") + "</html>");
-=======
-                JLabel lblBody = new JLabel("<html><b>Username:</b> " + username + " &nbsp;|&nbsp; <b>Password:</b> " + password + " &nbsp;|&nbsp; <b>Status:</b> " + (status != null ? status : "Aktif") + "</html>");
->>>>>>> d0438a77b2aacef5cdd1c847833573b6a69a68de
                 lblBody.setFont(new Font("Segoe UI", Font.PLAIN, 13));
 
                 cardUser.add(lblBody, BorderLayout.CENTER);
@@ -1074,7 +799,6 @@ public class AdminDashboardFrame extends JFrame {
         ));
     }
 
-<<<<<<< HEAD
     private void terimaLaporan(String idLaporan) {
         String sql = "UPDATE laporan SET status = 'Diproses' WHERE id = ?";
         try (Connection conn = DatabaseConnection.getConnection();
@@ -1097,7 +821,9 @@ public class AdminDashboardFrame extends JFrame {
         dialogPanel.add(new JScrollPane(txtFeedback), BorderLayout.CENTER);
 
         int res = JOptionPane.showConfirmDialog(this, dialogPanel, "Feedback Penolakan", JOptionPane.OK_CANCEL_OPTION, JOptionPane.WARNING_MESSAGE);
-        if (res != JOptionPane.OK_OPTION) return;
+        if (res != JOptionPane.OK_OPTION) {
+            return;
+        }
 
         String alasan = txtFeedback.getText().trim();
         if (alasan.isEmpty()) {
@@ -1118,16 +844,6 @@ public class AdminDashboardFrame extends JFrame {
                 psTolak.setString(3, alasan);
                 psTolak.executeUpdate();
             }
-=======
-    private void updateStatusDirect(String id, String statusBaru, String ketBaru) {
-        String query = "UPDATE laporan SET status = ?, keterangan = ? WHERE id = ?";
-        try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(query)) {
-            pstmt.setString(1, statusBaru);
-            pstmt.setString(2, ketBaru);
-            pstmt.setString(3, id);
-            pstmt.executeUpdate();
->>>>>>> d0438a77b2aacef5cdd1c847833573b6a69a68de
             muatDataAdminCard();
         } catch (SQLException e) {
             e.printStackTrace();
@@ -1144,7 +860,6 @@ public class AdminDashboardFrame extends JFrame {
             return;
         }
 
-<<<<<<< HEAD
         String sql = "INSERT INTO penanganan_laporan (laporan_id, admin_id, jadwal_perbaikan, nama_teknisi) VALUES (?, ?, ?, ?) " +
                 "ON DUPLICATE KEY UPDATE admin_id = VALUES(admin_id), jadwal_perbaikan = VALUES(jadwal_perbaikan), nama_teknisi = VALUES(nama_teknisi)";
         try (Connection conn = DatabaseConnection.getConnection();
@@ -1154,15 +869,6 @@ public class AdminDashboardFrame extends JFrame {
             ps.setString(3, jadwal);
             ps.setString(4, teknisi);
             ps.executeUpdate();
-=======
-        String query = "UPDATE laporan SET catatan = ?, keterangan = ? WHERE id = ?";
-        try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(query)) {
-            pstmt.setString(1, jadwal);
-            pstmt.setString(2, "Ditangani oleh: " + teknisi);
-            pstmt.setString(3, idLaporan);
-            pstmt.executeUpdate();
->>>>>>> d0438a77b2aacef5cdd1c847833573b6a69a68de
 
             JOptionPane.showMessageDialog(this, "Jadwal dan teknisi berhasil disimpan!");
             txtIdLaporanJadwal.setText("");
@@ -1178,7 +884,6 @@ public class AdminDashboardFrame extends JFrame {
             JOptionPane.showMessageDialog(this, "Pilih Card pada daftar Jadwal di atas terlebih dahulu!", "Peringatan", JOptionPane.WARNING_MESSAGE);
             return;
         }
-<<<<<<< HEAD
 
         try (Connection conn = DatabaseConnection.getConnection()) {
             try (PreparedStatement ps = conn.prepareStatement("UPDATE laporan SET status = 'Selesai' WHERE id = ?")) {
@@ -1190,15 +895,6 @@ public class AdminDashboardFrame extends JFrame {
                 psPen.setString(2, selectedIdJadwal);
                 psPen.executeUpdate();
             }
-=======
-        String query = "UPDATE laporan SET status = ?, keterangan = ? WHERE id = ?";
-        try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(query)) {
-            pstmt.setString(1, "Selesai");
-            pstmt.setString(2, "Perbaikan telah selesai dikerjakan.");
-            pstmt.setString(3, selectedIdJadwal);
-            pstmt.executeUpdate();
->>>>>>> d0438a77b2aacef5cdd1c847833573b6a69a68de
 
             JOptionPane.showMessageDialog(this, "Laporan ditandai Selesai!");
             selectedIdJadwal = "";
@@ -1209,7 +905,6 @@ public class AdminDashboardFrame extends JFrame {
     }
 
     private void tambahAkunPelapor() {
-<<<<<<< HEAD
         String nim = txtNewNim.getText().trim();
         String password = new String(txtNewPassword.getPassword()).trim();
         if (nim.isEmpty() || password.isEmpty()) {
@@ -1234,26 +929,6 @@ public class AdminDashboardFrame extends JFrame {
         } catch (SQLException e) {
             e.printStackTrace();
             JOptionPane.showMessageDialog(this, "Gagal menambah akun: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-=======
-        String username = txtNewUsername.getText().trim();
-        String password = new String(txtNewPassword.getPassword()).trim();
-        if (username.isEmpty() || password.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Username & Password wajib diisi!", "Peringatan", JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-        try (Connection conn = DatabaseConnection.getConnection()) {
-            String query = "INSERT INTO users (username, password, role, status) VALUES (?, ?, 'pelapor', 'Aktif')";
-            try (PreparedStatement pstmt = conn.prepareStatement(query)) {
-                pstmt.setString(1, username);
-                pstmt.setString(2, password);
-                pstmt.executeUpdate();
-            }
-            JOptionPane.showMessageDialog(this, "Akun pelapor berhasil ditambahkan!");
-            txtNewUsername.setText(""); txtNewPassword.setText("");
-            muatDataUserCard();
-        } catch (SQLException e) {
-            e.printStackTrace();
->>>>>>> d0438a77b2aacef5cdd1c847833573b6a69a68de
         }
     }
 }
