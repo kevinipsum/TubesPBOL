@@ -1,5 +1,6 @@
 package com.fakultas.fasilitas.model;
 
+<<<<<<< HEAD
 import java.sql.Timestamp;
 
 public class ModelUser {
@@ -113,4 +114,23 @@ public class ModelUser {
     public boolean isPelapor() {
         return "pelapor".equalsIgnoreCase(role);
     }
+=======
+public class ModelUser {
+    private String id;
+    private String username;
+    private String role;
+    private String status;
+
+    public ModelUser(String id, String username, String role, String status) {
+        this.id = id;
+        this.username = username;
+        this.role = role;
+        this.status = status;
+    }
+
+    public String getId() { return id; }
+    public String getUsername() { return username; }
+    public String getRole() { return role; }
+    public String getStatus() { return status; }
+>>>>>>> d0438a77b2aacef5cdd1c847833573b6a69a68de
 }
