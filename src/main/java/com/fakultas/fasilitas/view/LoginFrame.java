@@ -1,6 +1,7 @@
 package com.fakultas.fasilitas.view;
 
 import com.fakultas.fasilitas.model.DatabaseConnection;
+import com.fakultas.fasilitas.util.PasswordUtil;
 
 import javax.swing.*;
 import java.awt.*;
@@ -20,7 +21,6 @@ public class LoginFrame extends JFrame {
         setLocationRelativeTo(null);
         setLayout(new GridLayout(1, 2));
 
-        // Panel Kiri (Branding)
         JPanel leftPanel = new JPanel(new GridBagLayout());
         leftPanel.setBackground(new Color(6, 78, 59));
         GridBagConstraints gbcLeft = new GridBagConstraints();
@@ -40,7 +40,6 @@ public class LoginFrame extends JFrame {
         lblDesc.setFont(new Font("Segoe UI", Font.PLAIN, 15));
         leftPanel.add(lblDesc, gbcLeft);
 
-        // Panel Kanan (Form Login)
         JPanel rightPanel = new JPanel(null);
         rightPanel.setBackground(Color.WHITE);
 
@@ -112,16 +111,21 @@ public class LoginFrame extends JFrame {
         }
 
         String sql = "SELECT id, nim, username, password_hash, role, status_akun " +
-                "FROM users WHERE (nim = ? OR username = ?) AND password_hash = ? LIMIT 1";
+                "FROM users WHERE nim = ? OR username = ? LIMIT 1";
 
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, nimInput);
             ps.setString(2, nimInput);
-            ps.setString(3, passInput);
 
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
+                    String storedHash = rs.getString("password_hash");
+                    if (!PasswordUtil.verifyPassword(passInput, storedHash)) {
+                        JOptionPane.showMessageDialog(this, "NIM atau password salah!", "Login Gagal", JOptionPane.ERROR_MESSAGE);
+                        return;
+                    }
+
                     String statusAkun = rs.getString("status_akun");
                     if (statusAkun != null && !"aktif".equalsIgnoreCase(statusAkun)) {
                         JOptionPane.showMessageDialog(this, "Akun Anda sedang tidak aktif!", "Akses Ditolak", JOptionPane.ERROR_MESSAGE);
@@ -132,6 +136,14 @@ public class LoginFrame extends JFrame {
                     String role = rs.getString("role");
                     String nimDb = rs.getString("nim");
                     String usernameDb = rs.getString("username");
+
+                    if (!PasswordUtil.isSha256Hex(storedHash)) {
+                        try (PreparedStatement psUpgrade = conn.prepareStatement("UPDATE users SET password_hash = ? WHERE id = ?")) {
+                            psUpgrade.setString(1, PasswordUtil.hashPassword(passInput));
+                            psUpgrade.setInt(2, userId);
+                            psUpgrade.executeUpdate();
+                        }
+                    }
 
                     catatLogAktivitas(conn, userId, "LOGIN", "Berhasil login ke aplikasi JagaRuang");
 
@@ -207,23 +219,22 @@ public class LoginFrame extends JFrame {
                 return;
             }
 
-            String sqlCek = "SELECT id FROM users WHERE (nim = ? OR username = ?) AND password_hash = ? LIMIT 1";
+            String sqlCek = "SELECT id, password_hash FROM users WHERE nim = ? OR username = ? LIMIT 1";
             String sqlUpd = "UPDATE users SET password_hash = ? WHERE id = ?";
 
             try (Connection conn = DatabaseConnection.getConnection();
                  PreparedStatement psCek = conn.prepareStatement(sqlCek)) {
                 psCek.setString(1, nim);
                 psCek.setString(2, nim);
-                psCek.setString(3, passLama);
 
                 try (ResultSet rs = psCek.executeQuery()) {
-                    if (!rs.next()) {
+                    if (!rs.next() || !PasswordUtil.verifyPassword(passLama, rs.getString("password_hash"))) {
                         JOptionPane.showMessageDialog(dialog, "NIM atau password lama tidak sesuai!", "Gagal", JOptionPane.ERROR_MESSAGE);
                         return;
                     }
                     int userId = rs.getInt("id");
                     try (PreparedStatement psUpd = conn.prepareStatement(sqlUpd)) {
-                        psUpd.setString(1, passBaru);
+                        psUpd.setString(1, PasswordUtil.hashPassword(passBaru));
                         psUpd.setInt(2, userId);
                         psUpd.executeUpdate();
                     }

@@ -1,6 +1,7 @@
 package com.fakultas.fasilitas.view;
 
 import com.fakultas.fasilitas.model.DatabaseConnection;
+import com.fakultas.fasilitas.util.PasswordUtil;
 
 import javax.swing.*;
 import javax.swing.border.Border;
@@ -35,7 +36,6 @@ public class PelaporDashboardFrame extends JFrame {
         setLocationRelativeTo(null);
         setLayout(new BorderLayout());
 
-        // Sidebar Menu
         JPanel sidebar = new JPanel();
         sidebar.setBackground(new Color(6, 78, 59));
         sidebar.setPreferredSize(new Dimension(300, 700));
@@ -469,7 +469,7 @@ public class PelaporDashboardFrame extends JFrame {
                 String sql = "UPDATE users SET nama_lengkap = ?, password_hash = ? WHERE id = ?";
                 try (PreparedStatement ps = conn.prepareStatement(sql)) {
                     ps.setString(1, namaSimpan);
-                    ps.setString(2, passBaru);
+                    ps.setString(2, PasswordUtil.hashPassword(passBaru));
                     ps.setInt(3, uid);
                     ps.executeUpdate();
                 }

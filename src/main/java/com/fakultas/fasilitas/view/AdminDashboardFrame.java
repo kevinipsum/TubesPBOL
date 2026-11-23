@@ -1,6 +1,7 @@
 package com.fakultas.fasilitas.view;
 
 import com.fakultas.fasilitas.model.DatabaseConnection;
+import com.fakultas.fasilitas.util.PasswordUtil;
 
 import javax.swing.*;
 import java.awt.*;
@@ -758,6 +759,8 @@ public class AdminDashboardFrame extends JFrame {
                 String nim = rs.getString("nim");
                 String nama = rs.getString("nama_lengkap");
                 String namaTampil = (nama != null && !nama.isBlank()) ? nama : "-";
+                String passRaw = rs.getString("password_hash");
+                String statusPass = PasswordUtil.isSha256Hex(passRaw) ? "Terenkripsi (SHA-256)" : "Belum di-hash";
 
                 JPanel cardUser = new JPanel(new BorderLayout(10, 5));
                 cardUser.setBackground(Color.WHITE);
@@ -769,7 +772,7 @@ public class AdminDashboardFrame extends JFrame {
 
                 JLabel lblBody = new JLabel("<html><b>NIM:</b> " + (nim != null ? nim : "-") +
                         "  |  <b>Nama:</b> " + namaTampil +
-                        "  |  <b>Password:</b> " + rs.getString("password_hash") +
+                        "  |  <b>Password:</b> " + statusPass +
                         "  |  <b>Status:</b> " + rs.getString("status_akun") + "</html>");
                 lblBody.setFont(new Font("Segoe UI", Font.PLAIN, 13));
 
@@ -919,7 +922,7 @@ public class AdminDashboardFrame extends JFrame {
             ps.setString(1, nim);
             ps.setString(2, nim);
             ps.setString(3, nim);
-            ps.setString(4, password);
+            ps.setString(4, PasswordUtil.hashPassword(password));
             ps.executeUpdate();
 
             JOptionPane.showMessageDialog(this, "Akun pelapor berhasil ditambahkan!");
