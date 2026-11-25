@@ -22,8 +22,11 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 
 public class AdminDashboardFrame extends JFrame {
+    private static final int MAX_TAHUN_KALENDER = 2030;
+
     private JPanel cardPanel;
     private CardLayout cardLayout;
 
@@ -45,9 +48,12 @@ public class AdminDashboardFrame extends JFrame {
     private String selectedIdJadwal = "";
     private String selectedNimAkun = "";
     private int adminId;
+    private Calendar historyCalendar;
+    private HashMap<String, LocalDate> mapTanggalLapor = new HashMap<String, LocalDate>();
 
     public AdminDashboardFrame(int adminId, String adminUsername) {
         this.adminId = adminId;
+        this.historyCalendar = batasiTahunKalender(Calendar.getInstance());
 
         setTitle("JagaRuang - Panel Admin (" + adminUsername + ")");
         setSize(1200, 720);
@@ -68,6 +74,15 @@ public class AdminDashboardFrame extends JFrame {
 
         muatDataLaporanDanJadwal();
         muatDataAkun();
+    }
+
+    private Calendar batasiTahunKalender(Calendar cal) {
+        Calendar c = (Calendar) cal.clone();
+        if (c.get(Calendar.YEAR) > MAX_TAHUN_KALENDER) {
+            c.set(Calendar.YEAR, MAX_TAHUN_KALENDER);
+            c.set(Calendar.MONTH, Calendar.DECEMBER);
+        }
+        return c;
     }
 
     private JPanel createSidebar() {
@@ -148,7 +163,7 @@ public class AdminDashboardFrame extends JFrame {
             @Override
             public void actionPerformed(ActionEvent e) {
                 cardLayout.show(cardPanel, "HISTORY");
-                muatGridHistoryBulanan(Calendar.getInstance());
+                muatGridHistoryBulanan();
             }
         });
 
@@ -189,6 +204,9 @@ public class AdminDashboardFrame extends JFrame {
         selectedIdJadwal = "";
         if (txtIdLaporanJadwal != null) {
             txtIdLaporanJadwal.setText("");
+        }
+        if (txtTanggalPerbaikan != null) {
+            txtTanggalPerbaikan.setText(LocalDate.now().toString());
         }
     }
 
@@ -320,22 +338,53 @@ public class AdminDashboardFrame extends JFrame {
         return panel;
     }
 
+    private LocalDate getTanggalMinimumPerbaikan() {
+        LocalDate hariIni = LocalDate.now();
+        String idAktif = txtIdLaporanJadwal != null && !txtIdLaporanJadwal.getText().trim().isEmpty()
+                ? txtIdLaporanJadwal.getText().trim()
+                : selectedIdJadwal;
+
+        if (idAktif != null && !idAktif.isEmpty() && mapTanggalLapor.containsKey(idAktif)) {
+            LocalDate tglLapor = mapTanggalLapor.get(idAktif);
+            if (tglLapor != null && tglLapor.isAfter(hariIni)) {
+                return tglLapor;
+            }
+        }
+        return hariIni;
+    }
+
     private void bukaPilihTanggalDialog() {
-        final JDialog dialog = new JDialog(this, "Pilih Tanggal Perbaikan", true);
-        dialog.setSize(380, 420);
+        final LocalDate minDate = getTanggalMinimumPerbaikan();
+
+        final JDialog dialog = new JDialog(this, "Pilih Tanggal Perbaikan (Min: " + minDate + " | Max: " + MAX_TAHUN_KALENDER + "-12-31)", true);
+        dialog.setSize(420, 440);
         dialog.setLocationRelativeTo(this);
         dialog.setLayout(new BorderLayout());
 
-        JPanel panelHeader = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 10));
+        JPanel panelHeader = new JPanel(new FlowLayout(FlowLayout.CENTER, 12, 10));
         panelHeader.setBackground(new Color(6, 78, 59));
 
-        final Calendar cal = Calendar.getInstance();
+        final Calendar cal = batasiTahunKalender(Calendar.getInstance());
+        LocalDate targetDate = minDate;
+        try {
+            String currentText = txtTanggalPerbaikan.getText().trim();
+            if (currentText.matches("\\d{4}-\\d{2}-\\d{2}")) {
+                LocalDate parsed = LocalDate.parse(currentText);
+                targetDate = parsed.isBefore(minDate) ? minDate : parsed;
+            }
+        } catch (Exception ignored) {
+        }
+        int targetYear = Math.min(MAX_TAHUN_KALENDER, targetDate.getYear());
+        cal.set(Calendar.YEAR, targetYear);
+        cal.set(Calendar.MONTH, targetDate.getMonthValue() - 1);
+        cal.set(Calendar.DAY_OF_MONTH, Math.min(targetDate.getDayOfMonth(), cal.getActualMaximum(Calendar.DAY_OF_MONTH)));
+
         final JLabel lblBulan = new JLabel();
         lblBulan.setForeground(Color.WHITE);
         lblBulan.setFont(new Font("Segoe UI", Font.BOLD, 15));
 
-        JButton btnPrev = new JButton("<");
-        JButton btnNext = new JButton(">");
+        final JButton btnPrev = new JButton("<");
+        final JButton btnNext = new JButton(">");
         btnPrev.setFocusPainted(false);
         btnNext.setFocusPainted(false);
 
@@ -348,40 +397,70 @@ public class AdminDashboardFrame extends JFrame {
         panelGrid.setBackground(Color.WHITE);
         panelGrid.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
+        final SimpleDateFormat sdfBulan = new SimpleDateFormat("MMMM yyyy", new Locale("id", "ID"));
+
         final Runnable renderKalender = new Runnable() {
             @Override
             public void run() {
                 panelGrid.removeAll();
-                lblBulan.setText(new SimpleDateFormat("MMMM yyyy").format(cal.getTime()));
+                lblBulan.setText(sdfBulan.format(cal.getTime()));
+
+                int tahun = cal.get(Calendar.YEAR);
+                int bulan = cal.get(Calendar.MONTH);
+                btnNext.setEnabled(!(tahun >= MAX_TAHUN_KALENDER && bulan >= Calendar.DECEMBER));
 
                 Calendar cTemp = (Calendar) cal.clone();
                 cTemp.set(Calendar.DAY_OF_MONTH, 1);
                 int hariPertama = cTemp.get(Calendar.DAY_OF_WEEK) - 1;
                 int maxHari = cTemp.getActualMaximum(Calendar.DAY_OF_MONTH);
 
-                for (int i = 0; i < hariPertama; i++) {
-                    panelGrid.add(new JLabel(""));
+                int totalSel = Math.max(42, hariPertama + maxHari);
+                if (panelGrid.getLayout() instanceof GridLayout) {
+                    int rows = (int) Math.ceil(totalSel / 7.0);
+                    panelGrid.setLayout(new GridLayout(rows, 7, 5, 5));
                 }
 
-                final int tahun = cal.get(Calendar.YEAR);
-                final int bulan = cal.get(Calendar.MONTH);
+                for (int i = 0; i < hariPertama; i++) {
+                    JLabel kosong = new JLabel("");
+                    kosong.setOpaque(true);
+                    kosong.setBackground(new Color(248, 250, 252));
+                    panelGrid.add(kosong);
+                }
 
                 for (int i = 1; i <= maxHari; i++) {
+                    final int hariDipilih = i;
+                    final LocalDate tanggalBtn = LocalDate.of(tahun, bulan + 1, hariDipilih);
+                    final boolean bolehDipilih = !tanggalBtn.isBefore(minDate);
+
                     final JButton btnDay = new JButton(String.valueOf(i));
                     btnDay.setFocusPainted(false);
-                    btnDay.setBackground(new Color(241, 245, 249));
-                    btnDay.addActionListener(new ActionListener() {
-                        @Override
-                        public void actionPerformed(ActionEvent e) {
-                            txtTanggalPerbaikan.setText(String.format("%d-%02d-%02d", tahun, bulan + 1, Integer.parseInt(btnDay.getText())));
-                            dialog.dispose();
-                        }
-                    });
+                    btnDay.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+                    btnDay.setEnabled(bolehDipilih);
+
+                    if (bolehDipilih) {
+                        btnDay.setBackground(new Color(241, 245, 249));
+                        btnDay.addActionListener(new ActionListener() {
+                            @Override
+                            public void actionPerformed(ActionEvent e) {
+                                if (tanggalBtn.isBefore(minDate)) {
+                                    JOptionPane.showMessageDialog(dialog, "Tanggal perbaikan tidak boleh sebelum " + minDate + "!", "Peringatan", JOptionPane.WARNING_MESSAGE);
+                                    return;
+                                }
+                                txtTanggalPerbaikan.setText(tanggalBtn.toString());
+                                dialog.dispose();
+                            }
+                        });
+                    } else {
+                        btnDay.setBackground(new Color(226, 232, 240));
+                    }
                     panelGrid.add(btnDay);
                 }
 
-                for (int i = hariPertama + maxHari; i < 42; i++) {
-                    panelGrid.add(new JLabel(""));
+                for (int i = hariPertama + maxHari; i < totalSel; i++) {
+                    JLabel kosong = new JLabel("");
+                    kosong.setOpaque(true);
+                    kosong.setBackground(new Color(248, 250, 252));
+                    panelGrid.add(kosong);
                 }
 
                 panelGrid.revalidate();
@@ -392,6 +471,7 @@ public class AdminDashboardFrame extends JFrame {
         btnPrev.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
+                cal.set(Calendar.DAY_OF_MONTH, 1);
                 cal.add(Calendar.MONTH, -1);
                 renderKalender.run();
             }
@@ -400,8 +480,15 @@ public class AdminDashboardFrame extends JFrame {
         btnNext.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                cal.add(Calendar.MONTH, 1);
-                renderKalender.run();
+                if (cal.get(Calendar.YEAR) < MAX_TAHUN_KALENDER || cal.get(Calendar.MONTH) < Calendar.DECEMBER) {
+                    cal.set(Calendar.DAY_OF_MONTH, 1);
+                    cal.add(Calendar.MONTH, 1);
+                    if (cal.get(Calendar.YEAR) > MAX_TAHUN_KALENDER) {
+                        cal.set(Calendar.YEAR, MAX_TAHUN_KALENDER);
+                        cal.set(Calendar.MONTH, Calendar.DECEMBER);
+                    }
+                    renderKalender.run();
+                }
             }
         });
 
@@ -415,7 +502,7 @@ public class AdminDashboardFrame extends JFrame {
         panel.setBorder(BorderFactory.createEmptyBorder(25, 25, 25, 25));
         panel.setBackground(new Color(248, 250, 252));
 
-        JLabel lblTitle = new JLabel("History Bulanan (Klik tanggal untuk melihat rincian ID Laporan)");
+        JLabel lblTitle = new JLabel("History Bulanan (s/d " + MAX_TAHUN_KALENDER + " - Klik tanggal untuk melihat rincian ID Laporan)");
         lblTitle.setFont(new Font("Segoe UI", Font.BOLD, 18));
         panel.add(lblTitle, BorderLayout.NORTH);
 
@@ -423,12 +510,15 @@ public class AdminDashboardFrame extends JFrame {
         panelHistoryBulanan.setBackground(Color.WHITE);
         panelHistoryBulanan.setBorder(BorderFactory.createLineBorder(new Color(226, 232, 240)));
 
-        muatGridHistoryBulanan(Calendar.getInstance());
+        muatGridHistoryBulanan();
         panel.add(panelHistoryBulanan, BorderLayout.CENTER);
         return panel;
     }
 
-    private void muatGridHistoryBulanan(final Calendar cal) {
+    private void muatGridHistoryBulanan() {
+        if (historyCalendar == null) {
+            historyCalendar = batasiTahunKalender(Calendar.getInstance());
+        }
         panelHistoryBulanan.removeAll();
 
         HashMap<String, Integer> mapMasuk = new HashMap<String, Integer>();
@@ -459,10 +549,11 @@ public class AdminDashboardFrame extends JFrame {
             tutupResource(rs, stmt, conn);
         }
 
+        SimpleDateFormat sdfBulan = new SimpleDateFormat("MMMM yyyy", new Locale("id", "ID"));
         JPanel panelHeader = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 12));
         panelHeader.setBackground(new Color(6, 78, 59));
 
-        JLabel lblBulanTahun = new JLabel(new SimpleDateFormat("MMMM yyyy").format(cal.getTime()));
+        JLabel lblBulanTahun = new JLabel(sdfBulan.format(historyCalendar.getTime()));
         lblBulanTahun.setForeground(Color.WHITE);
         lblBulanTahun.setFont(new Font("Segoe UI", Font.BOLD, 16));
 
@@ -470,6 +561,10 @@ public class AdminDashboardFrame extends JFrame {
         JButton btnNext = new JButton("Bulan Berikutnya >");
         btnPrev.setFocusPainted(false);
         btnNext.setFocusPainted(false);
+
+        int tahunIni = historyCalendar.get(Calendar.YEAR);
+        int bulanIni = historyCalendar.get(Calendar.MONTH);
+        btnNext.setEnabled(!(tahunIni >= MAX_TAHUN_KALENDER && bulanIni >= Calendar.DECEMBER));
 
         panelHeader.add(btnPrev);
         panelHeader.add(lblBulanTahun);
@@ -490,14 +585,16 @@ public class AdminDashboardFrame extends JFrame {
         }
         panelCenter.add(panelHari, BorderLayout.NORTH);
 
-        JPanel panelGrid = new JPanel(new GridLayout(6, 7, 4, 4));
-        panelGrid.setBackground(new Color(241, 245, 249));
-        panelGrid.setBorder(BorderFactory.createEmptyBorder(8, 10, 10, 10));
-
-        Calendar cTemp = (Calendar) cal.clone();
+        Calendar cTemp = (Calendar) historyCalendar.clone();
         cTemp.set(Calendar.DAY_OF_MONTH, 1);
         int hariPertama = cTemp.get(Calendar.DAY_OF_WEEK) - 1;
         int maxHari = cTemp.getActualMaximum(Calendar.DAY_OF_MONTH);
+        int totalSel = Math.max(42, hariPertama + maxHari);
+        int rows = (int) Math.ceil(totalSel / 7.0);
+
+        JPanel panelGrid = new JPanel(new GridLayout(rows, 7, 4, 4));
+        panelGrid.setBackground(new Color(241, 245, 249));
+        panelGrid.setBorder(BorderFactory.createEmptyBorder(8, 10, 10, 10));
 
         for (int i = 0; i < hariPertama; i++) {
             JPanel pKosong = new JPanel();
@@ -505,11 +602,8 @@ public class AdminDashboardFrame extends JFrame {
             panelGrid.add(pKosong);
         }
 
-        int tahunIni = cal.get(Calendar.YEAR);
-        int bulanIni = cal.get(Calendar.MONTH);
-
         for (int i = 1; i <= maxHari; i++) {
-            final String tglKey = String.format("%d-%02d-%02d", tahunIni, bulanIni + 1, i);
+            final String tglKey = String.format("%04d-%02d-%02d", tahunIni, bulanIni + 1, i);
             int jmlMasuk = mapMasuk.containsKey(tglKey) ? mapMasuk.get(tglKey) : 0;
             int jmlSelesai = mapSelesai.containsKey(tglKey) ? mapSelesai.get(tglKey) : 0;
             int jmlDitolak = mapDitolak.containsKey(tglKey) ? mapDitolak.get(tglKey) : 0;
@@ -544,7 +638,7 @@ public class AdminDashboardFrame extends JFrame {
             panelGrid.add(btnDay);
         }
 
-        for (int i = hariPertama + maxHari; i < 42; i++) {
+        for (int i = hariPertama + maxHari; i < totalSel; i++) {
             JPanel pKosong = new JPanel();
             pKosong.setBackground(Color.WHITE);
             panelGrid.add(pKosong);
@@ -553,16 +647,24 @@ public class AdminDashboardFrame extends JFrame {
         btnPrev.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                cal.add(Calendar.MONTH, -1);
-                muatGridHistoryBulanan(cal);
+                historyCalendar.set(Calendar.DAY_OF_MONTH, 1);
+                historyCalendar.add(Calendar.MONTH, -1);
+                muatGridHistoryBulanan();
             }
         });
 
         btnNext.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                cal.add(Calendar.MONTH, 1);
-                muatGridHistoryBulanan(cal);
+                if (historyCalendar.get(Calendar.YEAR) < MAX_TAHUN_KALENDER || historyCalendar.get(Calendar.MONTH) < Calendar.DECEMBER) {
+                    historyCalendar.set(Calendar.DAY_OF_MONTH, 1);
+                    historyCalendar.add(Calendar.MONTH, 1);
+                    if (historyCalendar.get(Calendar.YEAR) > MAX_TAHUN_KALENDER) {
+                        historyCalendar.set(Calendar.YEAR, MAX_TAHUN_KALENDER);
+                        historyCalendar.set(Calendar.MONTH, Calendar.DECEMBER);
+                    }
+                    muatGridHistoryBulanan();
+                }
             }
         });
 
@@ -754,6 +856,7 @@ public class AdminDashboardFrame extends JFrame {
     private void muatDataLaporanDanJadwal() {
         panelListLaporan.removeAll();
         panelListJadwal.removeAll();
+        mapTanggalLapor.clear();
 
         List<ModelLaporan> daftarLaporan = new ArrayList<ModelLaporan>();
 
@@ -787,6 +890,13 @@ public class AdminDashboardFrame extends JFrame {
                 laporan.setJadwalPerbaikan(rs.getString("jadwal_perbaikan"));
                 laporan.setNamaTeknisi(rs.getString("nama_teknisi"));
                 daftarLaporan.add(laporan);
+
+                if (laporan.getId() != null && laporan.getTanggalLapor() != null && laporan.getTanggalLapor().matches("\\d{4}-\\d{2}-\\d{2}")) {
+                    try {
+                        mapTanggalLapor.put(laporan.getId(), LocalDate.parse(laporan.getTanggalLapor()));
+                    } catch (Exception ignored) {
+                    }
+                }
             }
 
             for (ModelLaporan laporan : daftarLaporan) {
@@ -838,6 +948,20 @@ public class AdminDashboardFrame extends JFrame {
             public void mouseClicked(MouseEvent e) {
                 selectedIdJadwal = id;
                 txtIdLaporanJadwal.setText(id);
+                LocalDate minDate = getTanggalMinimumPerbaikan();
+                try {
+                    String currentTgl = txtTanggalPerbaikan.getText().trim();
+                    if (currentTgl.matches("\\d{4}-\\d{2}-\\d{2}")) {
+                        LocalDate parsed = LocalDate.parse(currentTgl);
+                        if (parsed.isBefore(minDate)) {
+                            txtTanggalPerbaikan.setText(minDate.toString());
+                        }
+                    } else {
+                        txtTanggalPerbaikan.setText(minDate.toString());
+                    }
+                } catch (Exception ex) {
+                    txtTanggalPerbaikan.setText(minDate.toString());
+                }
                 JPanel parentCard = findParentJadwalCard(comp);
                 if (parentCard != null) {
                     highlightCard(panelListJadwal, parentCard);
@@ -876,11 +1000,11 @@ public class AdminDashboardFrame extends JFrame {
                 BorderFactory.createEmptyBorder(10, 15, 10, 15)
         ));
 
-        JLabel lblHeader = new JLabel("<html><b>ID:</b> " + id + "   |   <b>Pelapor:</b> " + namaPelapor +
-                "   |   <font color='#64748B'>Tanggal: " + tanggal + "  |  Status: <b>" + status + "</b></font></html>");
+        JLabel lblHeader = new JLabel("<html><b>ID:</b> " + id + "   |   <b>Pelapor:</b> " + namaPelapor +
+                "   |   <font color='#64748B'>Tanggal: " + tanggal + "  |  Status: <b>" + status + "</b></font></html>");
         lblHeader.setFont(new Font("Segoe UI", Font.PLAIN, 12));
 
-        JLabel lblBody = new JLabel("<html><b>Fasilitas:</b> " + fasilitas + "   |   <b>Lokasi:</b> " + lokasi +
+        JLabel lblBody = new JLabel("<html><b>Fasilitas:</b> " + fasilitas + "   |   <b>Lokasi:</b> " + lokasi +
                 "<br><b>Keluhan:</b> " + deskripsi + "</html>");
         lblBody.setFont(new Font("Segoe UI", Font.PLAIN, 12));
 
@@ -938,15 +1062,15 @@ public class AdminDashboardFrame extends JFrame {
                 BorderFactory.createEmptyBorder(10, 15, 10, 15)
         ));
 
-        String hint = isDiproses ? "  <font color='#0D9488'><i>(Klik untuk pilih)</i></font>" : "";
+        String hint = isDiproses ? "  <font color='#0D9488'><i>(Klik untuk pilih)</i></font>" : "";
 
-        JLabel lblHeader = new JLabel("<html><b>ID:</b> " + id + "   |   <b>Pelapor:</b> " + namaPelapor +
-                "   |   <font color='#64748B'>Status: <b>" + status + "</b></font>" + hint + "</html>");
+        JLabel lblHeader = new JLabel("<html><b>ID:</b> " + id + "   |   <b>Pelapor:</b> " + namaPelapor +
+                "   |   <font color='#64748B'>Status: <b>" + status + "</b></font>" + hint + "</html>");
         lblHeader.setFont(new Font("Segoe UI", Font.PLAIN, 12));
 
-        JLabel lblBody = new JLabel("<html><b>Fasilitas:</b> " + fasilitas + "   |   <b>Lokasi:</b> " + lokasi +
+        JLabel lblBody = new JLabel("<html><b>Fasilitas:</b> " + fasilitas + "   |   <b>Lokasi:</b> " + lokasi +
                 "<br><font color='#059669'><b>Jadwal:</b> " + (jadwal != null && !jadwal.isEmpty() ? jadwal : "-") +
-                "  |  <b>Teknisi:</b> " + (teknisi != null && !teknisi.isEmpty() ? teknisi : "-") + "</font></html>");
+                "  |  <b>Teknisi:</b> " + (teknisi != null && !teknisi.isEmpty() ? teknisi : "-") + "</font></html>");
         lblBody.setFont(new Font("Segoe UI", Font.PLAIN, 12));
 
         card.add(lblHeader, BorderLayout.NORTH);
@@ -994,9 +1118,9 @@ public class AdminDashboardFrame extends JFrame {
                 cardUser.setCursor(new Cursor(Cursor.HAND_CURSOR));
 
                 JLabel lblBody = new JLabel("<html><b>NIM:</b> " + (nim != null ? nim : "-") +
-                        "  |  <b>Nama:</b> " + namaTampil +
-                        "  |  <b>Status:</b> " + statusTampil +
-                        "  <font color='#0D9488'><i>(Klik untuk ganti password)</i></font></html>");
+                        "  |  <b>Nama:</b> " + namaTampil +
+                        "  |  <b>Status:</b> " + statusTampil +
+                        "  <font color='#0D9488'><i>(Klik untuk ganti password)</i></font></html>");
                 lblBody.setFont(new Font("Segoe UI", Font.PLAIN, 13));
 
                 cardUser.add(lblBody, BorderLayout.CENTER);
@@ -1118,6 +1242,18 @@ public class AdminDashboardFrame extends JFrame {
 
         if (idLaporan.isEmpty() || jadwal.isEmpty()) {
             JOptionPane.showMessageDialog(this, "Pilih card laporan berstatus Diproses terlebih dahulu!", "Peringatan", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        LocalDate minDate = getTanggalMinimumPerbaikan();
+        try {
+            LocalDate tglDipilih = LocalDate.parse(jadwal);
+            if (tglDipilih.isBefore(minDate)) {
+                JOptionPane.showMessageDialog(this, "Tanggal perbaikan tidak boleh sebelum " + minDate + "!", "Peringatan", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, "Format tanggal perbaikan tidak valid!", "Peringatan", JOptionPane.WARNING_MESSAGE);
             return;
         }
 
