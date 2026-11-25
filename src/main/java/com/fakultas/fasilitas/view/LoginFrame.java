@@ -138,12 +138,11 @@ public class LoginFrame extends JFrame {
                 String role = rs.getString("role");
                 String nimDb = rs.getString("nim");
                 String usernameDb = rs.getString("username");
-
                 dispose();
                 if ("admin".equalsIgnoreCase(role)) {
                     String adminLabel = (nimDb != null && !nimDb.isEmpty()) ? nimDb :
                             ((usernameDb != null && !usernameDb.isEmpty()) ? usernameDb : nimInput);
-                    AdminDashboardFrame adminFrame = new AdminDashboardFrame(userId, adminLabel);
+                    AdminDashboardFrame adminFrame = new AdminDashboardFrame(adminLabel, String.valueOf(userId));
                     adminFrame.setVisible(true);
                 } else {
                     String nimFinal = (nimDb != null && !nimDb.isEmpty()) ? nimDb :

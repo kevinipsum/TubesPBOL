@@ -1,9 +1,11 @@
 package com.fakultas.fasilitas.view;
 
-import com.fakultas.fasilitas.model.DatabaseConnection;
+import com.fakultas.fasilitas.model.DatabaseConnection; // Sesuaikan jika package-nya berbeda
+import com.fakultas.fasilitas.model.ModelLaporan;
 import com.fakultas.fasilitas.util.PasswordUtil;
 
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -13,151 +15,113 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
-import java.text.SimpleDateFormat;
 import java.time.LocalDate;
+import java.time.YearMonth;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class AdminDashboardFrame extends JFrame {
-    private JPanel cardPanel;
-    private CardLayout cardLayout;
 
-    private JPanel panelListLaporan;
-    private JPanel panelListJadwal;
-    private JPanel panelListUser;
-    private JPanel panelHistoryBulanan;
+    private final String namaAdmin;
+    private final String roleAdmin;
 
-    private JTextField txtIdLaporanJadwal;
+    private JLabel lblStatMenunggu;
+    private JLabel lblStatDiproses;
+    private JLabel lblStatSelesai;
+
+    private JPanel panelDaftarLaporan;
+    private JPanel panelDaftarJadwal;
+    private JPanel panelDaftarUser;
+    private JPanel panelKalenderBulanan;
+    private JPanel panelRincianBulanan;
+
+    private JLabel lblSelectedJadwal;
     private JTextField txtTanggalPerbaikan;
-    private JComboBox<String> cbTeknisiAnggota;
+    private JTextField txtNamaTeknisi;
+    private JButton btnSimpanJadwal;
+    private JButton btnSelesai;
 
-    private JTextField txtNewNim;
-    private JPasswordField txtNewPassword;
+    private JLabel lblSelectedUser;
+    private JTextField txtEditNim;
+    private JTextField txtEditNama;
+    private JComboBox<String> cmbEditRole;
+    private JTextField txtPasswordBaru;
+    private JButton btnSimpanAkun;
+    private JButton btnUpdatePass;
 
-    private JTextField txtTargetNimPassword;
-    private JPasswordField txtGantiPasswordBaru;
+    private JComboBox<String> cmbBulanHistory;
+    private JComboBox<String> cmbTahunHistory;
+    private JLabel lblJudulBulanHistory;
 
-    private String selectedIdJadwal = "";
-    private String selectedNimAkun = "";
-    private int adminId;
+    private JPanel selectedJadwalCard;
+    private String selectedLaporanId;
 
-    public AdminDashboardFrame(int adminId, String adminUsername) {
-        this.adminId = adminId;
+    private JPanel selectedUserCard;
+    private String selectedUserId;
 
-        setTitle("JagaRuang - Panel Admin (" + adminUsername + ")");
-        setSize(1200, 720);
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+    private static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+
+    public AdminDashboardFrame(String namaAdmin, String roleAdmin) {
+        this.namaAdmin = namaAdmin != null ? namaAdmin : "Admin";
+        this.roleAdmin = roleAdmin != null ? roleAdmin : "Admin";
+
+        setTitle("JagaRuang - Dashboard Admin");
+        setSize(1280, 780);
+        setMinimumSize(new Dimension(1100, 680));
         setLocationRelativeTo(null);
-        setLayout(new BorderLayout());
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
-        add(createSidebar(), BorderLayout.WEST);
-
-        cardLayout = new CardLayout();
-        cardPanel = new JPanel(cardLayout);
-        cardPanel.add(initLaporanPanel(), "LAPORAN");
-        cardPanel.add(initJadwalPanel(), "JADWAL");
-        cardPanel.add(initHistoryPanel(), "HISTORY");
-        cardPanel.add(initAkunPanel(), "AKUN");
-
-        add(cardPanel, BorderLayout.CENTER);
-
-        muatDataLaporanDanJadwal();
-        muatDataAkun();
+        initComponents();
+        muatSemuaData();
     }
 
-    private JPanel createSidebar() {
-        JPanel sidebar = new JPanel();
-        sidebar.setBackground(new Color(6, 78, 59));
-        sidebar.setPreferredSize(new Dimension(280, 720));
-        sidebar.setLayout(new GridBagLayout());
+    private void initComponents() {
+        JPanel root = new JPanel(new BorderLayout(0, 12));
+        root.setBackground(new Color(241, 245, 249));
+        root.setBorder(new EmptyBorder(14, 16, 14, 16));
 
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        gbc.anchor = GridBagConstraints.WEST;
-        gbc.insets = new Insets(10, 20, 4, 20);
+        JPanel headerPanel = new JPanel(new BorderLayout());
+        headerPanel.setBackground(Color.WHITE);
+        headerPanel.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(226, 232, 240), 1),
+                new EmptyBorder(12, 16, 12, 16)
+        ));
 
-        JLabel lblBrand = new JLabel("JagaRuang");
-        lblBrand.setForeground(Color.WHITE);
-        lblBrand.setFont(new Font("Segoe UI", Font.BOLD, 24));
-        sidebar.add(lblBrand, gbc);
+        JPanel titleBox = new JPanel();
+        titleBox.setLayout(new BoxLayout(titleBox, BoxLayout.Y_AXIS));
+        titleBox.setOpaque(false);
 
-        gbc.gridy = 1;
-        gbc.insets = new Insets(0, 20, 25, 20);
-        JLabel lblSub = new JLabel("Panel Administrator");
-        lblSub.setForeground(new Color(16, 185, 129));
-        sidebar.add(lblSub, gbc);
+        JLabel lblApp = new JLabel("JagaRuang - Panel Administrasi Fasilitas");
+        lblApp.setFont(new Font("SansSerif", Font.BOLD, 18));
+        lblApp.setForeground(new Color(15, 23, 42));
 
-        JButton btnLaporan = createNavButton("Laporan Masuk");
-        JButton btnJadwal = createNavButton("Jadwal & Perbaikan");
-        JButton btnHistory = createNavButton("History Bulanan");
-        JButton btnAkun = createNavButton("Manajemen Akun");
+        JLabel lblSub = new JLabel("Login sebagai: " + namaAdmin + " (" + roleAdmin + ")");
+        lblSub.setFont(new Font("SansSerif", Font.PLAIN, 12));
+        lblSub.setForeground(new Color(100, 116, 139));
 
-        gbc.gridy = 2;
-        gbc.insets = new Insets(6, 20, 6, 20);
-        sidebar.add(btnLaporan, gbc);
+        titleBox.add(lblApp);
+        titleBox.add(Box.createVerticalStrut(2));
+        titleBox.add(lblSub);
 
-        gbc.gridy = 3;
-        sidebar.add(btnJadwal, gbc);
+        JPanel rightHeader = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        rightHeader.setOpaque(false);
 
-        gbc.gridy = 4;
-        sidebar.add(btnHistory, gbc);
+        JButton btnRefresh = new JButton("Refresh Data");
+        btnRefresh.setFocusPainted(false);
+        btnRefresh.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                muatSemuaData();
+            }
+        });
 
-        gbc.gridy = 5;
-        sidebar.add(btnAkun, gbc);
-
-        gbc.gridy = 6;
-        gbc.weighty = 1.0;
-        sidebar.add(new JLabel(), gbc);
-
-        gbc.gridy = 7;
-        gbc.weighty = 0;
-        gbc.insets = new Insets(10, 20, 20, 20);
         JButton btnLogout = new JButton("Logout");
-        btnLogout.setBackground(new Color(239, 68, 68));
+        btnLogout.setBackground(new Color(220, 38, 38));
         btnLogout.setForeground(Color.WHITE);
         btnLogout.setFocusPainted(false);
-        btnLogout.setOpaque(true);
-        btnLogout.setBorderPainted(false);
-        btnLogout.setPreferredSize(new Dimension(240, 38));
-        sidebar.add(btnLogout, gbc);
-
-        btnLaporan.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                cardLayout.show(cardPanel, "LAPORAN");
-                muatDataLaporanDanJadwal();
-            }
-        });
-
-        btnJadwal.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                cardLayout.show(cardPanel, "JADWAL");
-                resetPilihanJadwal();
-                muatDataLaporanDanJadwal();
-            }
-        });
-
-        btnHistory.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                cardLayout.show(cardPanel, "HISTORY");
-                muatGridHistoryBulanan(Calendar.getInstance());
-            }
-        });
-
-        btnAkun.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                cardLayout.show(cardPanel, "AKUN");
-                resetPilihanAkun();
-                muatDataAkun();
-            }
-        });
-
         btnLogout.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -166,1061 +130,1248 @@ public class AdminDashboardFrame extends JFrame {
             }
         });
 
-        return sidebar;
+        rightHeader.add(btnRefresh);
+        rightHeader.add(btnLogout);
+
+        headerPanel.add(titleBox, BorderLayout.WEST);
+        headerPanel.add(rightHeader, BorderLayout.EAST);
+
+        JPanel statsPanel = new JPanel(new GridLayout(1, 3, 12, 0));
+        statsPanel.setOpaque(false);
+
+        lblStatMenunggu = new JLabel("0");
+        lblStatDiproses = new JLabel("0");
+        lblStatSelesai = new JLabel("0");
+
+        statsPanel.add(createStatCard("Menunggu Tinjauan", lblStatMenunggu, new Color(217, 119, 6)));
+        statsPanel.add(createStatCard("Sedang Diproses", lblStatDiproses, new Color(37, 99, 235)));
+        statsPanel.add(createStatCard("Selesai", lblStatSelesai, new Color(22, 163, 74)));
+
+        JPanel topContainer = new JPanel(new BorderLayout(0, 10));
+        topContainer.setOpaque(false);
+        topContainer.add(headerPanel, BorderLayout.NORTH);
+        topContainer.add(statsPanel, BorderLayout.SOUTH);
+
+        JTabbedPane tabbedPane = new JTabbedPane();
+        tabbedPane.setFont(new Font("SansSerif", Font.BOLD, 13));
+        tabbedPane.addTab("Peninjauan & Penjadwalan", buildPeninjauanDanJadwalTab());
+        tabbedPane.addTab("History Bulanan", buildHistoryBulananTab());
+        tabbedPane.addTab("Kelola Akun User", buildKelolaAkunTab());
+
+        root.add(topContainer, BorderLayout.NORTH);
+        root.add(tabbedPane, BorderLayout.CENTER);
+        setContentPane(root);
     }
 
-    private JButton createNavButton(String text) {
-        JButton btn = new JButton(text);
-        btn.setForeground(Color.WHITE);
-        btn.setBackground(new Color(15, 118, 110));
-        btn.setFocusPainted(false);
-        btn.setOpaque(true);
-        btn.setBorderPainted(false);
-        btn.setHorizontalAlignment(SwingConstants.LEFT);
-        btn.setFont(new Font("Segoe UI", Font.BOLD, 13));
-        btn.setPreferredSize(new Dimension(240, 40));
-        return btn;
+    private JPanel createStatCard(String title, JLabel valueLabel, Color accent) {
+        JPanel card = new JPanel(new BorderLayout());
+        card.setBackground(Color.WHITE);
+        card.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(226, 232, 240), 1),
+                new EmptyBorder(10, 14, 10, 14)
+        ));
+
+        JLabel lblTitle = new JLabel(title);
+        lblTitle.setFont(new Font("SansSerif", Font.PLAIN, 12));
+        lblTitle.setForeground(new Color(100, 116, 139));
+
+        valueLabel.setFont(new Font("SansSerif", Font.BOLD, 22));
+        valueLabel.setForeground(accent);
+
+        card.add(lblTitle, BorderLayout.NORTH);
+        card.add(valueLabel, BorderLayout.SOUTH);
+        return card;
     }
 
-    private void resetPilihanJadwal() {
-        selectedIdJadwal = "";
-        if (txtIdLaporanJadwal != null) {
-            txtIdLaporanJadwal.setText("");
-        }
-    }
+    private JPanel buildPeninjauanDanJadwalTab() {
+        JPanel tab = new JPanel(new GridLayout(1, 2, 14, 0));
+        tab.setBackground(new Color(241, 245, 249));
+        tab.setBorder(new EmptyBorder(10, 4, 4, 4));
 
-    private void resetPilihanAkun() {
-        selectedNimAkun = "";
-        if (txtTargetNimPassword != null) {
-            txtTargetNimPassword.setText("");
-        }
-        if (txtGantiPasswordBaru != null) {
-            txtGantiPasswordBaru.setText("");
-        }
-    }
+        JPanel leftPanel = new JPanel(new BorderLayout(0, 8));
+        leftPanel.setBackground(Color.WHITE);
+        leftPanel.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(226, 232, 240), 1),
+                new EmptyBorder(12, 12, 12, 12)
+        ));
 
-    private JPanel initLaporanPanel() {
-        JPanel panel = new JPanel(new BorderLayout(15, 15));
-        panel.setBorder(BorderFactory.createEmptyBorder(25, 25, 25, 25));
-        panel.setBackground(new Color(248, 250, 252));
+        JLabel lblLeftTitle = new JLabel("Laporan Masuk (Menunggu)");
+        lblLeftTitle.setFont(new Font("SansSerif", Font.BOLD, 14));
+        lblLeftTitle.setForeground(new Color(15, 23, 42));
 
-        JLabel lblTitle = new JLabel("Daftar Laporan Masuk (Menunggu Persetujuan)");
-        lblTitle.setFont(new Font("Segoe UI", Font.BOLD, 18));
-        panel.add(lblTitle, BorderLayout.NORTH);
+        panelDaftarLaporan = new JPanel();
+        panelDaftarLaporan.setLayout(new BoxLayout(panelDaftarLaporan, BoxLayout.Y_AXIS));
+        panelDaftarLaporan.setBackground(Color.WHITE);
 
-        panelListLaporan = new JPanel();
-        panelListLaporan.setLayout(new BoxLayout(panelListLaporan, BoxLayout.Y_AXIS));
-        panelListLaporan.setBackground(new Color(241, 245, 249));
-        panelListLaporan.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        JScrollPane scrollLaporan = new JScrollPane(panelDaftarLaporan);
+        scrollLaporan.setBorder(BorderFactory.createLineBorder(new Color(226, 232, 240), 1));
+        scrollLaporan.getVerticalScrollBar().setUnitIncrement(16);
 
-        panel.add(new JScrollPane(panelListLaporan), BorderLayout.CENTER);
-        return panel;
-    }
+        leftPanel.add(lblLeftTitle, BorderLayout.NORTH);
+        leftPanel.add(scrollLaporan, BorderLayout.CENTER);
 
-    private JPanel initJadwalPanel() {
-        JPanel panel = new JPanel(new BorderLayout(15, 15));
-        panel.setBorder(BorderFactory.createEmptyBorder(25, 25, 25, 25));
-        panel.setBackground(new Color(248, 250, 252));
+        JPanel rightPanel = new JPanel(new BorderLayout(0, 10));
+        rightPanel.setBackground(Color.WHITE);
+        rightPanel.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(226, 232, 240), 1),
+                new EmptyBorder(12, 12, 12, 12)
+        ));
 
-        JLabel lblTitle = new JLabel("Jadwal & Penugasan Teknisi Perbaikan");
-        lblTitle.setFont(new Font("Segoe UI", Font.BOLD, 18));
-        panel.add(lblTitle, BorderLayout.NORTH);
+        JLabel lblRightTitle = new JLabel("Jadwal & Penyelesaian Perbaikan");
+        lblRightTitle.setFont(new Font("SansSerif", Font.BOLD, 14));
+        lblRightTitle.setForeground(new Color(15, 23, 42));
 
-        panelListJadwal = new JPanel();
-        panelListJadwal.setLayout(new BoxLayout(panelListJadwal, BoxLayout.Y_AXIS));
-        panelListJadwal.setBackground(new Color(241, 245, 249));
-        panelListJadwal.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-        panel.add(new JScrollPane(panelListJadwal), BorderLayout.CENTER);
+        panelDaftarJadwal = new JPanel();
+        panelDaftarJadwal.setLayout(new BoxLayout(panelDaftarJadwal, BoxLayout.Y_AXIS));
+        panelDaftarJadwal.setBackground(Color.WHITE);
 
-        JPanel panelBottom = new JPanel(new BorderLayout(10, 10));
-        panelBottom.setOpaque(false);
+        JScrollPane scrollJadwal = new JScrollPane(panelDaftarJadwal);
+        scrollJadwal.setBorder(BorderFactory.createLineBorder(new Color(226, 232, 240), 1));
+        scrollJadwal.setPreferredSize(new Dimension(0, 300));
+        scrollJadwal.getVerticalScrollBar().setUnitIncrement(16);
 
-        JPanel panelForm = new JPanel(null);
-        panelForm.setBackground(Color.WHITE);
-        panelForm.setPreferredSize(new Dimension(0, 135));
-        panelForm.setBorder(BorderFactory.createTitledBorder("Atur Jadwal & Teknisi (Klik Card berstatus Diproses di atas)"));
+        JPanel formJadwal = new JPanel(new GridBagLayout());
+        formJadwal.setBackground(new Color(248, 250, 252));
+        formJadwal.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(203, 213, 225), 1),
+                new EmptyBorder(10, 12, 10, 12)
+        ));
 
-        JLabel lblId = new JLabel("ID Laporan:");
-        lblId.setBounds(20, 25, 90, 22);
-        panelForm.add(lblId);
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(4, 4, 4, 4);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
 
-        txtIdLaporanJadwal = new JTextField();
-        txtIdLaporanJadwal.setBounds(115, 25, 175, 28);
-        txtIdLaporanJadwal.setEditable(false);
-        panelForm.add(txtIdLaporanJadwal);
+        lblSelectedJadwal = new JLabel("Terpilih: Belum ada laporan dipilih");
+        lblSelectedJadwal.setFont(new Font("SansSerif", Font.BOLD, 12));
+        lblSelectedJadwal.setForeground(new Color(30, 41, 59));
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.gridwidth = 3;
+        formJadwal.add(lblSelectedJadwal, gbc);
 
-        JLabel lblTgl = new JLabel("Tgl Perbaikan:");
-        lblTgl.setBounds(320, 25, 95, 22);
-        panelForm.add(lblTgl);
+        gbc.gridwidth = 1;
+        gbc.gridy = 1;
+        gbc.gridx = 0;
+        gbc.weightx = 0;
+        formJadwal.add(new JLabel("Tanggal (YYYY-MM-DD):"), gbc);
 
-        txtTanggalPerbaikan = new JTextField(LocalDate.now().toString());
-        txtTanggalPerbaikan.setBounds(420, 25, 175, 28);
+        txtTanggalPerbaikan = new JTextField(12);
         txtTanggalPerbaikan.setEditable(false);
-        txtTanggalPerbaikan.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        txtTanggalPerbaikan.setBackground(Color.WHITE);
+        txtTanggalPerbaikan.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         txtTanggalPerbaikan.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
                 bukaPilihTanggalDialog();
             }
         });
-        panelForm.add(txtTanggalPerbaikan);
+        gbc.gridx = 1;
+        gbc.weightx = 1;
+        formJadwal.add(txtTanggalPerbaikan, gbc);
 
-        JLabel lblTeknisi = new JLabel("Nama Teknisi:");
-        lblTeknisi.setBounds(20, 70, 95, 22);
-        panelForm.add(lblTeknisi);
-
-        cbTeknisiAnggota = new JComboBox<String>(new String[]{
-                "Qeizha Aleesha Zyva",
-                "Syamil Mali Uzair",
-                "Syalikhafaradhiya Agira",
-                "Kevin Rodrigues Pandiangan"
+        JButton btnPilihTanggal = new JButton("Pilih Tanggal");
+        btnPilihTanggal.setFocusPainted(false);
+        btnPilihTanggal.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                bukaPilihTanggalDialog();
+            }
         });
-        cbTeknisiAnggota.setBounds(115, 70, 290, 28);
-        panelForm.add(cbTeknisiAnggota);
+        gbc.gridx = 2;
+        gbc.weightx = 0;
+        formJadwal.add(btnPilihTanggal, gbc);
 
-        JButton btnSimpanJadwal = new JButton("Simpan Jadwal");
-        btnSimpanJadwal.setBackground(new Color(16, 185, 129));
+        gbc.gridy = 2;
+        gbc.gridx = 0;
+        gbc.weightx = 0;
+        formJadwal.add(new JLabel("Nama Teknisi:"), gbc);
+
+        txtNamaTeknisi = new JTextField();
+        gbc.gridx = 1;
+        gbc.gridwidth = 2;
+        gbc.weightx = 1;
+        formJadwal.add(txtNamaTeknisi, gbc);
+
+        JPanel btnJadwalRow = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
+        btnJadwalRow.setOpaque(false);
+
+        btnSimpanJadwal = new JButton("Simpan Jadwal");
+        btnSimpanJadwal.setBackground(new Color(37, 99, 235));
         btnSimpanJadwal.setForeground(Color.WHITE);
         btnSimpanJadwal.setFocusPainted(false);
-        btnSimpanJadwal.setOpaque(true);
-        btnSimpanJadwal.setBorderPainted(false);
-        btnSimpanJadwal.setBounds(420, 70, 175, 28);
         btnSimpanJadwal.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 simpanJadwalPerbaikan();
             }
         });
-        panelForm.add(btnSimpanJadwal);
 
-        panelBottom.add(panelForm, BorderLayout.CENTER);
-
-        JPanel panelBtnSelesai = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        panelBtnSelesai.setOpaque(false);
-        JButton btnSelesai = new JButton("Tandai Selesai Perbaikan");
-        btnSelesai.setBackground(new Color(15, 118, 110));
+        btnSelesai = new JButton("Tandai Selesai");
+        btnSelesai.setBackground(new Color(22, 163, 74));
         btnSelesai.setForeground(Color.WHITE);
         btnSelesai.setFocusPainted(false);
-        btnSelesai.setOpaque(true);
-        btnSelesai.setBorderPainted(false);
-        btnSelesai.setPreferredSize(new Dimension(210, 38));
         btnSelesai.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 tandaiSelesaiPerbaikan();
             }
         });
-        panelBtnSelesai.add(btnSelesai);
 
-        panelBottom.add(panelBtnSelesai, BorderLayout.SOUTH);
-        panel.add(panelBottom, BorderLayout.SOUTH);
-        return panel;
+        btnJadwalRow.add(btnSimpanJadwal);
+        btnJadwalRow.add(btnSelesai);
+
+        gbc.gridy = 3;
+        gbc.gridx = 0;
+        gbc.gridwidth = 3;
+        formJadwal.add(btnJadwalRow, gbc);
+
+        JPanel topRight = new JPanel(new BorderLayout(0, 6));
+        topRight.setOpaque(false);
+        topRight.add(lblRightTitle, BorderLayout.NORTH);
+        topRight.add(scrollJadwal, BorderLayout.CENTER);
+
+        rightPanel.add(topRight, BorderLayout.CENTER);
+        rightPanel.add(formJadwal, BorderLayout.SOUTH);
+
+        tab.add(leftPanel);
+        tab.add(rightPanel);
+        return tab;
     }
 
-    private void bukaPilihTanggalDialog() {
-        final JDialog dialog = new JDialog(this, "Pilih Tanggal Perbaikan", true);
-        dialog.setSize(380, 420);
-        dialog.setLocationRelativeTo(this);
-        dialog.setLayout(new BorderLayout());
+    private JPanel buildHistoryBulananTab() {
+        JPanel tab = new JPanel(new BorderLayout(0, 10));
+        tab.setBackground(new Color(241, 245, 249));
+        tab.setBorder(new EmptyBorder(10, 4, 4, 4));
 
-        JPanel panelHeader = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 10));
-        panelHeader.setBackground(new Color(6, 78, 59));
+        JPanel filterBar = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 8));
+        filterBar.setBackground(Color.WHITE);
+        filterBar.setBorder(BorderFactory.createLineBorder(new Color(226, 232, 240), 1));
 
-        final Calendar cal = Calendar.getInstance();
-        final JLabel lblBulan = new JLabel();
-        lblBulan.setForeground(Color.WHITE);
-        lblBulan.setFont(new Font("Segoe UI", Font.BOLD, 15));
-
-        JButton btnPrev = new JButton("<");
-        JButton btnNext = new JButton(">");
-        btnPrev.setFocusPainted(false);
-        btnNext.setFocusPainted(false);
-
-        panelHeader.add(btnPrev);
-        panelHeader.add(lblBulan);
-        panelHeader.add(btnNext);
-        dialog.add(panelHeader, BorderLayout.NORTH);
-
-        final JPanel panelGrid = new JPanel(new GridLayout(6, 7, 5, 5));
-        panelGrid.setBackground(Color.WHITE);
-        panelGrid.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-
-        final Runnable renderKalender = new Runnable() {
-            @Override
-            public void run() {
-                panelGrid.removeAll();
-                lblBulan.setText(new SimpleDateFormat("MMMM yyyy").format(cal.getTime()));
-
-                Calendar cTemp = (Calendar) cal.clone();
-                cTemp.set(Calendar.DAY_OF_MONTH, 1);
-                int hariPertama = cTemp.get(Calendar.DAY_OF_WEEK) - 1;
-                int maxHari = cTemp.getActualMaximum(Calendar.DAY_OF_MONTH);
-
-                for (int i = 0; i < hariPertama; i++) {
-                    panelGrid.add(new JLabel(""));
-                }
-
-                final int tahun = cal.get(Calendar.YEAR);
-                final int bulan = cal.get(Calendar.MONTH);
-
-                for (int i = 1; i <= maxHari; i++) {
-                    final JButton btnDay = new JButton(String.valueOf(i));
-                    btnDay.setFocusPainted(false);
-                    btnDay.setBackground(new Color(241, 245, 249));
-                    btnDay.addActionListener(new ActionListener() {
-                        @Override
-                        public void actionPerformed(ActionEvent e) {
-                            txtTanggalPerbaikan.setText(String.format("%d-%02d-%02d", tahun, bulan + 1, Integer.parseInt(btnDay.getText())));
-                            dialog.dispose();
-                        }
-                    });
-                    panelGrid.add(btnDay);
-                }
-
-                for (int i = hariPertama + maxHari; i < 42; i++) {
-                    panelGrid.add(new JLabel(""));
-                }
-
-                panelGrid.revalidate();
-                panelGrid.repaint();
-            }
+        String[] bulanList = {
+                "01 - Januari", "02 - Februari", "03 - Maret", "04 - April",
+                "05 - Mei", "06 - Juni", "07 - Juli", "08 - Agustus",
+                "09 - September", "10 - Oktober", "11 - November", "12 - Desember"
         };
+        cmbBulanHistory = new JComboBox<>(bulanList);
+        cmbBulanHistory.setSelectedIndex(LocalDate.now().getMonthValue() - 1);
 
-        btnPrev.addActionListener(new ActionListener() {
+        int tahunSekarang = LocalDate.now().getYear();
+        List<String> tahunItems = new ArrayList<>();
+        for (int y = tahunSekarang + 1; y >= tahunSekarang - 4; y--) {
+            tahunItems.add(String.valueOf(y));
+        }
+        cmbTahunHistory = new JComboBox<>(tahunItems.toArray(new String[0]));
+        cmbTahunHistory.setSelectedItem(String.valueOf(tahunSekarang));
+
+        JButton btnTampilBulan = new JButton("Tampilkan");
+        btnTampilBulan.setFocusPainted(false);
+        btnTampilBulan.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                cal.add(Calendar.MONTH, -1);
-                renderKalender.run();
+                muatHistoryBulanan();
             }
         });
 
-        btnNext.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                cal.add(Calendar.MONTH, 1);
-                renderKalender.run();
-            }
-        });
+        filterBar.add(new JLabel("Bulan:"));
+        filterBar.add(cmbBulanHistory);
+        filterBar.add(new JLabel("Tahun:"));
+        filterBar.add(cmbTahunHistory);
+        filterBar.add(btnTampilBulan);
 
-        renderKalender.run();
-        dialog.add(panelGrid, BorderLayout.CENTER);
-        dialog.setVisible(true);
+        JPanel contentSplit = new JPanel(new GridLayout(1, 2, 14, 0));
+        contentSplit.setOpaque(false);
+
+        JPanel calCard = new JPanel(new BorderLayout(0, 8));
+        calCard.setBackground(Color.WHITE);
+        calCard.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(226, 232, 240), 1),
+                new EmptyBorder(12, 12, 12, 12)
+        ));
+
+        lblJudulBulanHistory = new JLabel("Kalender Laporan");
+        lblJudulBulanHistory.setFont(new Font("SansSerif", Font.BOLD, 14));
+
+        panelKalenderBulanan = new JPanel(new GridLayout(0, 7, 6, 6));
+        panelKalenderBulanan.setBackground(Color.WHITE);
+
+        calCard.add(lblJudulBulanHistory, BorderLayout.NORTH);
+        calCard.add(panelKalenderBulanan, BorderLayout.CENTER);
+
+        JPanel detailCard = new JPanel(new BorderLayout(0, 8));
+        detailCard.setBackground(Color.WHITE);
+        detailCard.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(226, 232, 240), 1),
+                new EmptyBorder(12, 12, 12, 12)
+        ));
+
+        JLabel lblDetailTitle = new JLabel("Rincian Laporan Bulan Terpilih");
+        lblDetailTitle.setFont(new Font("SansSerif", Font.BOLD, 14));
+
+        panelRincianBulanan = new JPanel();
+        panelRincianBulanan.setLayout(new BoxLayout(panelRincianBulanan, BoxLayout.Y_AXIS));
+        panelRincianBulanan.setBackground(Color.WHITE);
+
+        JScrollPane scrollRincian = new JScrollPane(panelRincianBulanan);
+        scrollRincian.setBorder(BorderFactory.createLineBorder(new Color(226, 232, 240), 1));
+        scrollRincian.getVerticalScrollBar().setUnitIncrement(16);
+
+        detailCard.add(lblDetailTitle, BorderLayout.NORTH);
+        detailCard.add(scrollRincian, BorderLayout.CENTER);
+
+        contentSplit.add(calCard);
+        contentSplit.add(detailCard);
+
+        tab.add(filterBar, BorderLayout.NORTH);
+        tab.add(contentSplit, BorderLayout.CENTER);
+        return tab;
     }
 
-    private JPanel initHistoryPanel() {
-        JPanel panel = new JPanel(new BorderLayout(15, 15));
-        panel.setBorder(BorderFactory.createEmptyBorder(25, 25, 25, 25));
-        panel.setBackground(new Color(248, 250, 252));
+    private JPanel buildKelolaAkunTab() {
+        JPanel tab = new JPanel(new GridLayout(1, 2, 14, 0));
+        tab.setBackground(new Color(241, 245, 249));
+        tab.setBorder(new EmptyBorder(10, 4, 4, 4));
 
-        JLabel lblTitle = new JLabel("History Bulanan (Klik tanggal untuk melihat rincian ID Laporan)");
-        lblTitle.setFont(new Font("Segoe UI", Font.BOLD, 18));
-        panel.add(lblTitle, BorderLayout.NORTH);
+        JPanel listCard = new JPanel(new BorderLayout(0, 8));
+        listCard.setBackground(Color.WHITE);
+        listCard.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(226, 232, 240), 1),
+                new EmptyBorder(12, 12, 12, 12)
+        ));
 
-        panelHistoryBulanan = new JPanel(new BorderLayout());
-        panelHistoryBulanan.setBackground(Color.WHITE);
-        panelHistoryBulanan.setBorder(BorderFactory.createLineBorder(new Color(226, 232, 240)));
+        JLabel lblListUser = new JLabel("Daftar Akun Pengguna");
+        lblListUser.setFont(new Font("SansSerif", Font.BOLD, 14));
 
-        muatGridHistoryBulanan(Calendar.getInstance());
-        panel.add(panelHistoryBulanan, BorderLayout.CENTER);
-        return panel;
-    }
+        panelDaftarUser = new JPanel();
+        panelDaftarUser.setLayout(new BoxLayout(panelDaftarUser, BoxLayout.Y_AXIS));
+        panelDaftarUser.setBackground(Color.WHITE);
 
-    private void muatGridHistoryBulanan(final Calendar cal) {
-        panelHistoryBulanan.removeAll();
+        JScrollPane scrollUser = new JScrollPane(panelDaftarUser);
+        scrollUser.setBorder(BorderFactory.createLineBorder(new Color(226, 232, 240), 1));
+        scrollUser.getVerticalScrollBar().setUnitIncrement(16);
 
-        HashMap<String, Integer> mapMasuk = new HashMap<String, Integer>();
-        HashMap<String, Integer> mapSelesai = new HashMap<String, Integer>();
-        HashMap<String, Integer> mapDitolak = new HashMap<String, Integer>();
+        listCard.add(lblListUser, BorderLayout.NORTH);
+        listCard.add(scrollUser, BorderLayout.CENTER);
 
-        String sql = "SELECT tanggal_lapor, COUNT(*) AS jml_masuk, " +
-                "SUM(status = 'Selesai') AS jml_selesai, " +
-                "SUM(status = 'Ditolak') AS jml_ditolak " +
-                "FROM laporan GROUP BY tanggal_lapor";
+        JPanel formCard = new JPanel(new GridBagLayout());
+        formCard.setBackground(Color.WHITE);
+        formCard.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(226, 232, 240), 1),
+                new EmptyBorder(14, 16, 14, 16)
+        ));
 
-        Connection conn = null;
-        Statement stmt = null;
-        ResultSet rs = null;
-        try {
-            conn = DatabaseConnection.getConnection();
-            stmt = conn.createStatement();
-            rs = stmt.executeQuery(sql);
-            while (rs.next()) {
-                String tgl = rs.getString("tanggal_lapor");
-                mapMasuk.put(tgl, rs.getInt("jml_masuk"));
-                mapSelesai.put(tgl, rs.getInt("jml_selesai"));
-                mapDitolak.put(tgl, rs.getInt("jml_ditolak"));
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        } finally {
-            tutupResource(rs, stmt, conn);
-        }
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(6, 4, 6, 4);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
 
-        JPanel panelHeader = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 12));
-        panelHeader.setBackground(new Color(6, 78, 59));
+        lblSelectedUser = new JLabel("Pilih akun di sebelah kiri untuk mengedit");
+        lblSelectedUser.setFont(new Font("SansSerif", Font.BOLD, 13));
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.gridwidth = 2;
+        formCard.add(lblSelectedUser, gbc);
 
-        JLabel lblBulanTahun = new JLabel(new SimpleDateFormat("MMMM yyyy").format(cal.getTime()));
-        lblBulanTahun.setForeground(Color.WHITE);
-        lblBulanTahun.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        gbc.gridwidth = 1;
+        gbc.gridy = 1;
+        gbc.gridx = 0;
+        formCard.add(new JLabel("NIM / Username:"), gbc);
 
-        JButton btnPrev = new JButton("< Bulan Sebelumnya");
-        JButton btnNext = new JButton("Bulan Berikutnya >");
-        btnPrev.setFocusPainted(false);
-        btnNext.setFocusPainted(false);
+        txtEditNim = new JTextField();
+        gbc.gridx = 1;
+        gbc.weightx = 1;
+        formCard.add(txtEditNim, gbc);
 
-        panelHeader.add(btnPrev);
-        panelHeader.add(lblBulanTahun);
-        panelHeader.add(btnNext);
-        panelHistoryBulanan.add(panelHeader, BorderLayout.NORTH);
+        gbc.gridy = 2;
+        gbc.gridx = 0;
+        gbc.weightx = 0;
+        formCard.add(new JLabel("Nama Lengkap:"), gbc);
 
-        JPanel panelCenter = new JPanel(new BorderLayout());
+        txtEditNama = new JTextField();
+        gbc.gridx = 1;
+        gbc.weightx = 1;
+        formCard.add(txtEditNama, gbc);
 
-        JPanel panelHari = new JPanel(new GridLayout(1, 7, 4, 4));
-        panelHari.setBackground(new Color(241, 245, 249));
-        panelHari.setBorder(BorderFactory.createEmptyBorder(8, 10, 0, 10));
-        String[] namaHari = {"Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"};
-        for (int i = 0; i < namaHari.length; i++) {
-            JLabel lblH = new JLabel(namaHari[i], SwingConstants.CENTER);
-            lblH.setFont(new Font("Segoe UI", Font.BOLD, 13));
-            lblH.setForeground(new Color(15, 118, 110));
-            panelHari.add(lblH);
-        }
-        panelCenter.add(panelHari, BorderLayout.NORTH);
+        gbc.gridy = 3;
+        gbc.gridx = 0;
+        gbc.weightx = 0;
+        formCard.add(new JLabel("Role:"), gbc);
 
-        JPanel panelGrid = new JPanel(new GridLayout(6, 7, 4, 4));
-        panelGrid.setBackground(new Color(241, 245, 249));
-        panelGrid.setBorder(BorderFactory.createEmptyBorder(8, 10, 10, 10));
+        cmbEditRole = new JComboBox<>(new String[]{"Pelapor", "Admin"});
+        gbc.gridx = 1;
+        gbc.weightx = 1;
+        formCard.add(cmbEditRole, gbc);
 
-        Calendar cTemp = (Calendar) cal.clone();
-        cTemp.set(Calendar.DAY_OF_MONTH, 1);
-        int hariPertama = cTemp.get(Calendar.DAY_OF_WEEK) - 1;
-        int maxHari = cTemp.getActualMaximum(Calendar.DAY_OF_MONTH);
-
-        for (int i = 0; i < hariPertama; i++) {
-            JPanel pKosong = new JPanel();
-            pKosong.setBackground(Color.WHITE);
-            panelGrid.add(pKosong);
-        }
-
-        int tahunIni = cal.get(Calendar.YEAR);
-        int bulanIni = cal.get(Calendar.MONTH);
-
-        for (int i = 1; i <= maxHari; i++) {
-            final String tglKey = String.format("%d-%02d-%02d", tahunIni, bulanIni + 1, i);
-            int jmlMasuk = mapMasuk.containsKey(tglKey) ? mapMasuk.get(tglKey) : 0;
-            int jmlSelesai = mapSelesai.containsKey(tglKey) ? mapSelesai.get(tglKey) : 0;
-            int jmlDitolak = mapDitolak.containsKey(tglKey) ? mapDitolak.get(tglKey) : 0;
-
-            JButton btnDay = new JButton();
-            btnDay.setLayout(new BorderLayout());
-            btnDay.setFocusPainted(false);
-            btnDay.setBackground(Color.WHITE);
-            btnDay.setBorder(BorderFactory.createLineBorder(new Color(203, 213, 225)));
-            btnDay.setCursor(new Cursor(Cursor.HAND_CURSOR));
-
-            JLabel lblNum = new JLabel(" " + i);
-            lblNum.setFont(new Font("Segoe UI", Font.BOLD, 12));
-            lblNum.setForeground(new Color(15, 23, 42));
-            btnDay.add(lblNum, BorderLayout.NORTH);
-
-            if (jmlMasuk > 0 || jmlSelesai > 0 || jmlDitolak > 0) {
-                JLabel lblInfo = new JLabel(String.format(
-                        "<html><div style='font-size:9px; padding:2px 3px; color:#065f46;'>Masuk: <b>%d</b><br>Selesai: <b>%d</b><br><font color='#dc2626'>Ditolak: <b>%d</b></font></div></html>",
-                        jmlMasuk, jmlSelesai, jmlDitolak
-                ));
-                btnDay.add(lblInfo, BorderLayout.CENTER);
-                btnDay.setBackground(new Color(209, 250, 229));
-            }
-
-            btnDay.addActionListener(new ActionListener() {
-                @Override
-                public void actionPerformed(ActionEvent e) {
-                    tampilkanPopUpDetailTanggal(tglKey);
-                }
-            });
-            panelGrid.add(btnDay);
-        }
-
-        for (int i = hariPertama + maxHari; i < 42; i++) {
-            JPanel pKosong = new JPanel();
-            pKosong.setBackground(Color.WHITE);
-            panelGrid.add(pKosong);
-        }
-
-        btnPrev.addActionListener(new ActionListener() {
+        btnSimpanAkun = new JButton("Simpan Profil / Role");
+        btnSimpanAkun.setBackground(new Color(37, 99, 235));
+        btnSimpanAkun.setForeground(Color.WHITE);
+        btnSimpanAkun.setFocusPainted(false);
+        btnSimpanAkun.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                cal.add(Calendar.MONTH, -1);
-                muatGridHistoryBulanan(cal);
+                simpanPerubahanAkun();
             }
         });
 
-        btnNext.addActionListener(new ActionListener() {
+        gbc.gridy = 4;
+        gbc.gridx = 0;
+        gbc.gridwidth = 2;
+        formCard.add(btnSimpanAkun, gbc);
+
+        JSeparator sep = new JSeparator();
+        gbc.gridy = 5;
+        formCard.add(sep, gbc);
+
+        gbc.gridwidth = 1;
+        gbc.gridy = 6;
+        gbc.gridx = 0;
+        gbc.weightx = 0;
+        formCard.add(new JLabel("Password Baru:"), gbc);
+
+        txtPasswordBaru = new JTextField();
+        gbc.gridx = 1;
+        gbc.weightx = 1;
+        formCard.add(txtPasswordBaru, gbc);
+
+        btnUpdatePass = new JButton("Reset Password User");
+        btnUpdatePass.setBackground(new Color(15, 23, 42));
+        btnUpdatePass.setForeground(Color.WHITE);
+        btnUpdatePass.setFocusPainted(false);
+        btnUpdatePass.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                cal.add(Calendar.MONTH, 1);
-                muatGridHistoryBulanan(cal);
+                resetPasswordUser();
             }
         });
 
-        panelCenter.add(panelGrid, BorderLayout.CENTER);
-        panelHistoryBulanan.add(panelCenter, BorderLayout.CENTER);
-        panelHistoryBulanan.revalidate();
-        panelHistoryBulanan.repaint();
+        gbc.gridy = 7;
+        gbc.gridx = 0;
+        gbc.gridwidth = 2;
+        formCard.add(btnUpdatePass, gbc);
+
+        tab.add(listCard);
+        tab.add(formCard);
+        return tab;
     }
 
-    private void tampilkanPopUpDetailTanggal(String tglKey) {
-        final JDialog dialog = new JDialog(this, "Rincian Tanggal: " + tglKey, true);
-        dialog.setSize(380, 340);
-        dialog.setLocationRelativeTo(this);
-        dialog.setLayout(new BorderLayout(10, 10));
+    private void muatSemuaData() {
+        muatDataLaporanDanJadwal();
+        muatHistoryBulanan();
+        muatDaftarUser();
+    }
 
-        JPanel panelContent = new JPanel();
-        panelContent.setLayout(new BoxLayout(panelContent, BoxLayout.Y_AXIS));
-        panelContent.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
-        panelContent.setBackground(Color.WHITE);
-
-        ArrayList<String> listMasuk = new ArrayList<String>();
-        ArrayList<String> listSelesai = new ArrayList<String>();
-        ArrayList<String> listDitolak = new ArrayList<String>();
-
-        String sql = "SELECT id, status FROM laporan WHERE tanggal_lapor = ?";
+    private void muatDataLaporanDanJadwal() {
         Connection conn = null;
         PreparedStatement ps = null;
         ResultSet rs = null;
         try {
             conn = DatabaseConnection.getConnection();
+            String sql = "SELECT l.id, l.tanggal_lapor, l.deskripsi, l.status, "
+                    + "gr.nama_lokasi AS lokasi, f.nama_fasilitas AS fasilitas, "
+                    + "u.nim, u.nama_lengkap, "
+                    + "pl.jadwal_perbaikan, pl.nama_teknisi, "
+                    + "rp.alasan_penolakan "
+                    + "FROM laporan l "
+                    + "JOIN gedung_ruangan gr ON l.ruangan_id = gr.id "
+                    + "JOIN fasilitas f ON l.fasilitas_id = f.id "
+                    + "JOIN users u ON l.pelapor_id = u.id "
+                    + "LEFT JOIN penanganan_laporan pl ON pl.laporan_id = l.id "
+                    + "LEFT JOIN riwayat_penolakan rp ON rp.laporan_id = l.id "
+                    + "ORDER BY l.tanggal_lapor DESC, l.id DESC";
             ps = conn.prepareStatement(sql);
-            ps.setString(1, tglKey);
             rs = ps.executeQuery();
+
+            panelDaftarLaporan.removeAll();
+            panelDaftarJadwal.removeAll();
+            selectedJadwalCard = null;
+            selectedLaporanId = null;
+
+            int totalMenunggu = 0;
+            int totalDiproses = 0;
+            int totalSelesai = 0;
+
             while (rs.next()) {
-                String id = rs.getString("id");
-                String status = rs.getString("status");
-                listMasuk.add(id);
-                if ("Selesai".equalsIgnoreCase(status)) {
-                    listSelesai.add(id);
-                } else if ("Ditolak".equalsIgnoreCase(status)) {
-                    listDitolak.add(id);
+                ModelLaporan item = new ModelLaporan();
+                item.setId(rs.getString("id"));
+                item.setTanggalLapor(rs.getString("tanggal_lapor"));
+                item.setDeskripsi(rs.getString("deskripsi"));
+                item.setStatus(rs.getString("status"));
+                item.setLokasi(rs.getString("lokasi"));
+                item.setFasilitas(rs.getString("fasilitas"));
+                item.setPelapor(formatNamaPelapor(rs.getString("nama_lengkap"), rs.getString("nim")));
+                item.setJadwalPerbaikan(rs.getString("jadwal_perbaikan"));
+                item.setNamaTeknisi(rs.getString("nama_teknisi"));
+                item.setAlasanPenolakan(rs.getString("alasan_penolakan"));
+
+                String st = item.getStatus() != null ? item.getStatus() : "Menunggu";
+                if ("Menunggu".equalsIgnoreCase(st)) {
+                    totalMenunggu++;
+                } else if ("Diproses".equalsIgnoreCase(st)) {
+                    totalDiproses++;
+                } else if ("Selesai".equalsIgnoreCase(st)) {
+                    totalSelesai++;
+                }
+
+                if ("Menunggu".equalsIgnoreCase(st)) {
+                    JPanel cardLap = createLaporanCard(item);
+                    panelDaftarLaporan.add(cardLap);
+                    panelDaftarLaporan.add(Box.createVerticalStrut(12));
+                }
+
+                if ("Diproses".equalsIgnoreCase(st) || "Selesai".equalsIgnoreCase(st)) {
+                    JPanel cardJad = createJadwalCard(item);
+                    panelDaftarJadwal.add(cardJad);
+                    panelDaftarJadwal.add(Box.createVerticalStrut(10));
                 }
             }
+
+            if (lblStatMenunggu != null) lblStatMenunggu.setText(String.valueOf(totalMenunggu));
+            if (lblStatDiproses != null) lblStatDiproses.setText(String.valueOf(totalDiproses));
+            if (lblStatSelesai != null) lblStatSelesai.setText(String.valueOf(totalSelesai));
+
+            if (panelDaftarLaporan.getComponentCount() == 0) {
+                JLabel kosong = new JLabel("Tidak ada laporan yang menunggu tinjauan.");
+                kosong.setFont(new Font("SansSerif", Font.PLAIN, 13));
+                kosong.setForeground(new Color(100, 116, 139));
+                panelDaftarLaporan.add(kosong);
+            }
+
+            if (panelDaftarJadwal.getComponentCount() == 0) {
+                JLabel kosongJadwal = new JLabel("Belum ada laporan yang dijadwalkan.");
+                kosongJadwal.setFont(new Font("SansSerif", Font.PLAIN, 13));
+                kosongJadwal.setForeground(new Color(100, 116, 139));
+                panelDaftarJadwal.add(kosongJadwal);
+            }
+
+            panelDaftarLaporan.revalidate();
+            panelDaftarLaporan.repaint();
+            panelDaftarJadwal.revalidate();
+            panelDaftarJadwal.repaint();
         } catch (SQLException e) {
-            e.printStackTrace();
+            JOptionPane.showMessageDialog(this, "Gagal memuat data laporan: " + e.getMessage());
         } finally {
             tutupResource(rs, ps, conn);
         }
+    }
 
-        JLabel lblMasuk = new JLabel("<html><b>Laporan Masuk (" + listMasuk.size() + "):</b><br>" +
-                (listMasuk.isEmpty() ? "-" : String.join(", ", listMasuk)) + "</html>");
-        JLabel lblSelesai = new JLabel("<html><b>Laporan Selesai (" + listSelesai.size() + "):</b><br>" +
-                (listSelesai.isEmpty() ? "-" : String.join(", ", listSelesai)) + "</html>");
-        lblSelesai.setForeground(new Color(5, 150, 105));
-        JLabel lblDitolak = new JLabel("<html><b>Laporan Ditolak (" + listDitolak.size() + "):</b><br>" +
-                (listDitolak.isEmpty() ? "-" : String.join(", ", listDitolak)) + "</html>");
-        lblDitolak.setForeground(new Color(220, 38, 38));
+    private JPanel createLaporanCard(final ModelLaporan item) {
+        final String id = item.getId();
+        String fasilitas = item.getFasilitas() != null ? item.getFasilitas() : "-";
+        String lokasi = item.getLokasi() != null ? item.getLokasi() : "-";
+        String tanggal = item.getTanggalLapor() != null ? item.getTanggalLapor() : "-";
+        String deskripsi = item.getDeskripsi() != null ? item.getDeskripsi() : "-";
+        String status = item.getStatus() != null ? item.getStatus() : "Menunggu";
+        String pelapor = item.getPelapor() != null ? item.getPelapor() : "-";
 
-        panelContent.add(lblMasuk);
-        panelContent.add(Box.createRigidArea(new Dimension(0, 12)));
-        panelContent.add(lblSelesai);
-        panelContent.add(Box.createRigidArea(new Dimension(0, 12)));
-        panelContent.add(lblDitolak);
+        JPanel card = new JPanel(new BorderLayout(12, 8));
+        card.setBackground(Color.WHITE);
+        card.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(226, 232, 240), 1),
+                BorderFactory.createEmptyBorder(14, 16, 14, 16)
+        ));
+        card.setMaximumSize(new Dimension(Integer.MAX_VALUE, 150));
 
-        dialog.add(new JScrollPane(panelContent), BorderLayout.CENTER);
+        JPanel infoPanel = new JPanel();
+        infoPanel.setLayout(new BoxLayout(infoPanel, BoxLayout.Y_AXIS));
+        infoPanel.setOpaque(false);
 
-        JButton btnTutup = new JButton("Tutup");
-        btnTutup.setBackground(new Color(16, 185, 129));
-        btnTutup.setForeground(Color.WHITE);
-        btnTutup.setFocusPainted(false);
-        btnTutup.setOpaque(true);
-        btnTutup.setBorderPainted(false);
-        btnTutup.addActionListener(new ActionListener() {
+        JLabel lblJudul = new JLabel("#" + id + " - " + fasilitas + " (" + lokasi + ")");
+        lblJudul.setFont(new Font("SansSerif", Font.BOLD, 14));
+        lblJudul.setForeground(new Color(15, 23, 42));
+
+        JLabel lblMeta = new JLabel("Pelapor: " + pelapor + "  |  Tanggal: " + tanggal + "  |  Status: " + status);
+        lblMeta.setFont(new Font("SansSerif", Font.PLAIN, 12));
+        lblMeta.setForeground(new Color(71, 85, 105));
+
+        JTextArea txtDesk = new JTextArea(deskripsi);
+        txtDesk.setFont(new Font("SansSerif", Font.PLAIN, 13));
+        txtDesk.setForeground(new Color(30, 41, 59));
+        txtDesk.setLineWrap(true);
+        txtDesk.setWrapStyleWord(true);
+        txtDesk.setEditable(false);
+        txtDesk.setOpaque(false);
+        txtDesk.setBorder(null);
+
+        infoPanel.add(lblJudul);
+        infoPanel.add(Box.createVerticalStrut(4));
+        infoPanel.add(lblMeta);
+        infoPanel.add(Box.createVerticalStrut(6));
+        infoPanel.add(txtDesk);
+
+        JPanel aksiPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
+        aksiPanel.setOpaque(false);
+
+        JButton btnTerima = new JButton("Terima");
+        btnTerima.setBackground(new Color(22, 163, 74));
+        btnTerima.setForeground(Color.WHITE);
+        btnTerima.setFocusPainted(false);
+
+        JButton btnTolak = new JButton("Tolak");
+        btnTolak.setBackground(new Color(220, 38, 38));
+        btnTolak.setForeground(Color.WHITE);
+        btnTolak.setFocusPainted(false);
+
+        btnTerima.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                dialog.dispose();
+                prosesTerimaLaporan(id);
             }
         });
 
-        JPanel panelBottom = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        panelBottom.add(btnTutup);
-        dialog.add(panelBottom, BorderLayout.SOUTH);
-        dialog.setVisible(true);
-    }
-
-    private JPanel initAkunPanel() {
-        JPanel panel = new JPanel(new BorderLayout(15, 15));
-        panel.setBorder(BorderFactory.createEmptyBorder(25, 25, 25, 25));
-        panel.setBackground(new Color(248, 250, 252));
-
-        JLabel lblTitle = new JLabel("Manajemen Akun Pelapor");
-        lblTitle.setFont(new Font("Segoe UI", Font.BOLD, 18));
-        panel.add(lblTitle, BorderLayout.NORTH);
-
-        panelListUser = new JPanel();
-        panelListUser.setLayout(new BoxLayout(panelListUser, BoxLayout.Y_AXIS));
-        panelListUser.setBackground(new Color(241, 245, 249));
-        panelListUser.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-        panel.add(new JScrollPane(panelListUser), BorderLayout.CENTER);
-
-        JPanel panelBottom = new JPanel(new GridLayout(1, 2, 15, 0));
-        panelBottom.setOpaque(false);
-        panelBottom.setPreferredSize(new Dimension(0, 180));
-
-        JPanel panelTambah = new JPanel(null);
-        panelTambah.setBackground(Color.WHITE);
-        panelTambah.setBorder(BorderFactory.createTitledBorder("Tambah Akun Pelapor Baru"));
-
-        JLabel lblNimNew = new JLabel("NIM:");
-        lblNimNew.setBounds(15, 28, 85, 22);
-        panelTambah.add(lblNimNew);
-
-        txtNewNim = new JTextField();
-        txtNewNim.setBounds(105, 25, 215, 28);
-        panelTambah.add(txtNewNim);
-
-        JLabel lblPassNew = new JLabel("Password:");
-        lblPassNew.setBounds(15, 68, 85, 22);
-        panelTambah.add(lblPassNew);
-
-        txtNewPassword = new JPasswordField();
-        txtNewPassword.setBounds(105, 65, 215, 28);
-        panelTambah.add(txtNewPassword);
-
-        JButton btnSimpanAkun = new JButton("Simpan Akun");
-        btnSimpanAkun.setBackground(new Color(16, 185, 129));
-        btnSimpanAkun.setForeground(Color.WHITE);
-        btnSimpanAkun.setFocusPainted(false);
-        btnSimpanAkun.setOpaque(true);
-        btnSimpanAkun.setBorderPainted(false);
-        btnSimpanAkun.setBounds(105, 110, 215, 34);
-        btnSimpanAkun.addActionListener(new ActionListener() {
+        btnTolak.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                tambahAkunPelapor();
+                prosesTolakLaporan(id);
             }
         });
-        panelTambah.add(btnSimpanAkun);
 
-        JPanel panelGantiPass = new JPanel(null);
-        panelGantiPass.setBackground(Color.WHITE);
-        panelGantiPass.setBorder(BorderFactory.createTitledBorder("Ganti Password Akun (Klik Akun di atas)"));
+        aksiPanel.add(btnTerima);
+        aksiPanel.add(btnTolak);
 
-        JLabel lblTargetNim = new JLabel("NIM Akun:");
-        lblTargetNim.setBounds(15, 28, 95, 22);
-        panelGantiPass.add(lblTargetNim);
-
-        txtTargetNimPassword = new JTextField();
-        txtTargetNimPassword.setBounds(115, 25, 205, 28);
-        txtTargetNimPassword.setEditable(false);
-        panelGantiPass.add(txtTargetNimPassword);
-
-        JLabel lblPassBaru = new JLabel("Password Baru:");
-        lblPassBaru.setBounds(15, 68, 95, 22);
-        panelGantiPass.add(lblPassBaru);
-
-        txtGantiPasswordBaru = new JPasswordField();
-        txtGantiPasswordBaru.setBounds(115, 65, 205, 28);
-        panelGantiPass.add(txtGantiPasswordBaru);
-
-        JButton btnUpdatePass = new JButton("Simpan Password");
-        btnUpdatePass.setBackground(new Color(15, 118, 110));
-        btnUpdatePass.setForeground(Color.WHITE);
-        btnUpdatePass.setFocusPainted(false);
-        btnUpdatePass.setOpaque(true);
-        btnUpdatePass.setBorderPainted(false);
-        btnUpdatePass.setBounds(115, 110, 205, 34);
-        btnUpdatePass.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                gantiPasswordAkun();
-            }
-        });
-        panelGantiPass.add(btnUpdatePass);
-
-        panelBottom.add(panelTambah);
-        panelBottom.add(panelGantiPass);
-        panel.add(panelBottom, BorderLayout.SOUTH);
-        return panel;
+        card.add(infoPanel, BorderLayout.CENTER);
+        card.add(aksiPanel, BorderLayout.SOUTH);
+        return card;
     }
 
-    private String formatNamaPelapor(String namaLengkap, String nim) {
-        if (namaLengkap != null && !namaLengkap.trim().isEmpty() && !namaLengkap.trim().equals(nim)) {
-            return namaLengkap.trim();
-        }
-        return "Mahasiswa";
+    private JPanel createJadwalCard(final ModelLaporan item) {
+        final String id = item.getId();
+        String fasilitas = item.getFasilitas() != null ? item.getFasilitas() : "-";
+        String lokasi = item.getLokasi() != null ? item.getLokasi() : "-";
+        String status = item.getStatus() != null ? item.getStatus() : "-";
+        String jadwal = (item.getJadwalPerbaikan() != null && !item.getJadwalPerbaikan().trim().isEmpty())
+                ? item.getJadwalPerbaikan() : "Belum dijadwalkan";
+        String teknisi = (item.getNamaTeknisi() != null && !item.getNamaTeknisi().trim().isEmpty())
+                ? item.getNamaTeknisi() : "Belum ditugaskan";
+
+        final JPanel card = new JPanel();
+        card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
+        card.setBackground(Color.WHITE);
+        card.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(203, 213, 225), 1),
+                BorderFactory.createEmptyBorder(10, 12, 10, 12)
+        ));
+        card.setMaximumSize(new Dimension(Integer.MAX_VALUE, 105));
+
+        JLabel lblId = new JLabel("#" + id + " - " + fasilitas + " (" + status + ")");
+        lblId.setFont(new Font("SansSerif", Font.BOLD, 12));
+        lblId.setForeground(new Color(15, 23, 42));
+
+        JLabel lblLok = new JLabel("Lokasi: " + lokasi);
+        lblLok.setFont(new Font("SansSerif", Font.PLAIN, 12));
+        lblLok.setForeground(new Color(71, 85, 105));
+
+        JLabel lblJad = new JLabel("Jadwal: " + jadwal + " | Teknisi: " + teknisi);
+        lblJad.setFont(new Font("SansSerif", Font.PLAIN, 11));
+        lblJad.setForeground(new Color(51, 65, 85));
+
+        card.add(lblId);
+        card.add(Box.createVerticalStrut(3));
+        card.add(lblLok);
+        card.add(Box.createVerticalStrut(3));
+        card.add(lblJad);
+
+        attachJadwalClick(card, item);
+        return card;
     }
 
-    private void muatDataLaporanDanJadwal() {
-        panelListLaporan.removeAll();
-        panelListJadwal.removeAll();
-
-        String sql = "SELECT l.id, f.nama_fasilitas AS fasilitas, gr.nama_lokasi AS lokasi, " +
-                "l.tanggal_lapor AS tanggal, l.deskripsi, l.status, " +
-                "u.nim, u.nama_lengkap, pl.jadwal_perbaikan, pl.nama_teknisi " +
-                "FROM laporan l " +
-                "JOIN gedung_ruangan gr ON l.ruangan_id = gr.id " +
-                "JOIN fasilitas f ON l.fasilitas_id = f.id " +
-                "JOIN users u ON l.pelapor_id = u.id " +
-                "LEFT JOIN penanganan_laporan pl ON pl.laporan_id = l.id " +
-                "ORDER BY l.id ASC";
-
-        Connection conn = null;
-        Statement stmt = null;
-        ResultSet rs = null;
-        try {
-            conn = DatabaseConnection.getConnection();
-            stmt = conn.createStatement();
-            rs = stmt.executeQuery(sql);
-
-            while (rs.next()) {
-                String id = rs.getString("id");
-                String fasilitas = rs.getString("fasilitas");
-                String lokasi = rs.getString("lokasi");
-                String tanggal = rs.getString("tanggal");
-                String deskripsi = rs.getString("deskripsi");
-                String status = rs.getString("status");
-                String namaPelapor = formatNamaPelapor(rs.getString("nama_lengkap"), rs.getString("nim"));
-                String jadwal = rs.getString("jadwal_perbaikan");
-                String teknisi = rs.getString("nama_teknisi");
-
-                if ("Menunggu".equalsIgnoreCase(status)) {
-                    JPanel cardLaporan = createLaporanCard(id, namaPelapor, fasilitas, lokasi, tanggal, deskripsi, status);
-                    cardLaporan.setPreferredSize(new Dimension(780, 110));
-                    cardLaporan.setMaximumSize(new Dimension(Integer.MAX_VALUE, 120));
-                    panelListLaporan.add(cardLaporan);
-                    panelListLaporan.add(Box.createRigidArea(new Dimension(0, 10)));
-                }
-
-                boolean isDiproses = "Diproses".equalsIgnoreCase(status);
-                boolean isSelesai = "Selesai".equalsIgnoreCase(status);
-                if (isDiproses || isSelesai) {
-                    JPanel cardJadwal = createJadwalCard(id, namaPelapor, fasilitas, lokasi, status, jadwal, teknisi, isDiproses);
-                    cardJadwal.setPreferredSize(new Dimension(780, 95));
-                    cardJadwal.setMaximumSize(new Dimension(Integer.MAX_VALUE, 105));
-
-                    if (isDiproses) {
-                        attachJadwalClick(cardJadwal, id);
-                        if (id.equals(selectedIdJadwal)) {
-                            highlightCard(panelListJadwal, cardJadwal);
-                        }
-                    }
-
-                    panelListJadwal.add(cardJadwal);
-                    panelListJadwal.add(Box.createRigidArea(new Dimension(0, 10)));
-                }
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        } finally {
-            tutupResource(rs, stmt, conn);
-        }
-
-        panelListLaporan.revalidate();
-        panelListLaporan.repaint();
-        panelListJadwal.revalidate();
-        panelListJadwal.repaint();
-    }
-
-    private void attachJadwalClick(Component comp, final String id) {
-        comp.setCursor(new Cursor(Cursor.HAND_CURSOR));
+    private void attachJadwalClick(Component comp, final ModelLaporan item) {
+        comp.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         comp.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
-                selectedIdJadwal = id;
-                txtIdLaporanJadwal.setText(id);
-                JPanel parentCard = findParentJadwalCard(comp);
-                if (parentCard != null) {
-                    highlightCard(panelListJadwal, parentCard);
+                JPanel targetCard = findParentJadwalCard(e.getComponent());
+                if (targetCard != null) {
+                    selectedJadwalCard = targetCard;
+                    highlightCard(panelDaftarJadwal, targetCard);
+                }
+                selectedLaporanId = item.getId();
+                if (lblSelectedJadwal != null) {
+                    lblSelectedJadwal.setText("Terpilih: #" + item.getId() + " (" + item.getFasilitas() + ")");
+                }
+                if (txtTanggalPerbaikan != null && item.getJadwalPerbaikan() != null) {
+                    txtTanggalPerbaikan.setText(item.getJadwalPerbaikan());
+                }
+                if (txtNamaTeknisi != null && item.getNamaTeknisi() != null) {
+                    txtNamaTeknisi.setText(item.getNamaTeknisi());
                 }
             }
         });
+
         if (comp instanceof Container) {
             Container c = (Container) comp;
             for (int i = 0; i < c.getComponentCount(); i++) {
-                attachJadwalClick(c.getComponent(i), id);
+                attachJadwalClick(c.getComponent(i), item);
             }
         }
     }
 
     private JPanel findParentJadwalCard(Component comp) {
         Component curr = comp;
-        while (curr != null && curr.getParent() != panelListJadwal) {
+        while (curr != null && curr.getParent() != panelDaftarJadwal) {
             curr = curr.getParent();
         }
         return (curr instanceof JPanel) ? (JPanel) curr : null;
     }
 
-    private JPanel createLaporanCard(final String id, String namaPelapor, String fasilitas, String lokasi,
-                                     String tanggal, String deskripsi, String status) {
-        JPanel card = new JPanel(new BorderLayout(10, 5));
-        card.setBackground(Color.WHITE);
-        card.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(226, 232, 240)),
-                BorderFactory.createEmptyBorder(10, 15, 10, 15)
-        ));
-
-        JLabel lblHeader = new JLabel("<html><b>ID:</b> " + id + "   |   <b>Pelapor:</b> " + namaPelapor +
-                "   |   <font color='#64748B'>Tanggal: " + tanggal + "  |  Status: <b>" + status + "</b></font></html>");
-        lblHeader.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-
-        JLabel lblBody = new JLabel("<html><b>Fasilitas:</b> " + fasilitas + "   |   <b>Lokasi:</b> " + lokasi +
-                "<br><b>Keluhan:</b> " + deskripsi + "</html>");
-        lblBody.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-
-        JPanel panelBtn = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
-        panelBtn.setOpaque(false);
-
-        JButton btnTerima = new JButton("Terima");
-        btnTerima.setBackground(new Color(16, 185, 129));
-        btnTerima.setForeground(Color.WHITE);
-        btnTerima.setFocusPainted(false);
-        btnTerima.setOpaque(true);
-        btnTerima.setBorderPainted(false);
-        btnTerima.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                terimaLaporan(id);
-            }
-        });
-
-        JButton btnTolak = new JButton("Tolak");
-        btnTolak.setBackground(new Color(239, 68, 68));
-        btnTolak.setForeground(Color.WHITE);
-        btnTolak.setFocusPainted(false);
-        btnTolak.setOpaque(true);
-        btnTolak.setBorderPainted(false);
-        btnTolak.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                tolakLaporan(id);
-            }
-        });
-
-        panelBtn.add(btnTerima);
-        panelBtn.add(btnTolak);
-
-        card.add(lblHeader, BorderLayout.NORTH);
-        card.add(lblBody, BorderLayout.CENTER);
-        card.add(panelBtn, BorderLayout.SOUTH);
-        return card;
-    }
-
-    private JPanel createJadwalCard(String id, String namaPelapor, String fasilitas, String lokasi,
-                                    String status, String jadwal, String teknisi, boolean isDiproses) {
-        JPanel card = new JPanel(new BorderLayout(10, 5));
-        card.setBackground(isDiproses ? Color.WHITE : new Color(248, 250, 252));
-        card.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(isDiproses ? new Color(148, 163, 184) : new Color(226, 232, 240)),
-                BorderFactory.createEmptyBorder(10, 15, 10, 15)
-        ));
-
-        String hint = isDiproses ? "  <font color='#0D9488'><i>(Klik untuk pilih)</i></font>" : "";
-
-        JLabel lblHeader = new JLabel("<html><b>ID:</b> " + id + "   |   <b>Pelapor:</b> " + namaPelapor +
-                "   |   <font color='#64748B'>Status: <b>" + status + "</b></font>" + hint + "</html>");
-        lblHeader.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-
-        JLabel lblBody = new JLabel("<html><b>Fasilitas:</b> " + fasilitas + "   |   <b>Lokasi:</b> " + lokasi +
-                "<br><font color='#059669'><b>Jadwal:</b> " + (jadwal != null && !jadwal.isEmpty() ? jadwal : "-") +
-                "  |  <b>Teknisi:</b> " + (teknisi != null && !teknisi.isEmpty() ? teknisi : "-") + "</font></html>");
-        lblBody.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-
-        card.add(lblHeader, BorderLayout.NORTH);
-        card.add(lblBody, BorderLayout.CENTER);
-        return card;
-    }
-
-    private void muatDataAkun() {
-        panelListUser.removeAll();
-        String sql = "SELECT nim, nama_lengkap, status_akun FROM users WHERE role = 'pelapor' ORDER BY id ASC";
-
-        Connection conn = null;
-        Statement stmt = null;
-        ResultSet rs = null;
-        try {
-            conn = DatabaseConnection.getConnection();
-            stmt = conn.createStatement();
-            rs = stmt.executeQuery(sql);
-            while (rs.next()) {
-                final String nim = rs.getString("nim");
-                String nama = rs.getString("nama_lengkap");
-                String namaTampil = (nama != null && !nama.trim().isEmpty()) ? nama : "-";
-
-                final JPanel cardUser = new JPanel(new BorderLayout(10, 5));
-                cardUser.setBackground(Color.WHITE);
-                cardUser.setBorder(BorderFactory.createCompoundBorder(
-                        BorderFactory.createLineBorder(new Color(226, 232, 240)),
-                        BorderFactory.createEmptyBorder(10, 15, 10, 15)
-                ));
-                cardUser.setPreferredSize(new Dimension(780, 55));
-                cardUser.setMaximumSize(new Dimension(Integer.MAX_VALUE, 65));
-                cardUser.setCursor(new Cursor(Cursor.HAND_CURSOR));
-
-                JLabel lblBody = new JLabel("<html><b>NIM:</b> " + (nim != null ? nim : "-") +
-                        "  |  <b>Nama:</b> " + namaTampil +
-                        "  |  <b>Status:</b> " + rs.getString("status_akun") +
-                        "  <font color='#0D9488'><i>(Klik untuk ganti password)</i></font></html>");
-                lblBody.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-
-                cardUser.add(lblBody, BorderLayout.CENTER);
-
-                cardUser.addMouseListener(new MouseAdapter() {
-                    @Override
-                    public void mouseClicked(MouseEvent e) {
-                        selectedNimAkun = nim != null ? nim : "";
-                        txtTargetNimPassword.setText(selectedNimAkun);
-                        highlightCard(panelListUser, cardUser);
-                    }
-                });
-
-                if (nim != null && nim.equals(selectedNimAkun)) {
-                    highlightCard(panelListUser, cardUser);
-                }
-
-                panelListUser.add(cardUser);
-                panelListUser.add(Box.createRigidArea(new Dimension(0, 10)));
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        } finally {
-            tutupResource(rs, stmt, conn);
-        }
-
-        panelListUser.revalidate();
-        panelListUser.repaint();
-    }
-
     private void highlightCard(JPanel container, JPanel selectedCard) {
-        Component[] comps = container.getComponents();
-        for (int i = 0; i < comps.length; i++) {
-            if (comps[i] instanceof JPanel) {
-                JPanel p = (JPanel) comps[i];
-                p.setBackground(Color.WHITE);
+        if (container == null) return;
+        for (Component c : container.getComponents()) {
+            if (c instanceof JPanel) {
+                JPanel p = (JPanel) c;
+                boolean isSelected = (p == selectedCard);
+                p.setBackground(isSelected ? new Color(239, 246, 255) : Color.WHITE);
                 p.setBorder(BorderFactory.createCompoundBorder(
-                        BorderFactory.createLineBorder(new Color(148, 163, 184)),
-                        BorderFactory.createEmptyBorder(10, 15, 10, 15)
+                        BorderFactory.createLineBorder(
+                                isSelected ? new Color(37, 99, 235) : new Color(203, 213, 225),
+                                isSelected ? 2 : 1
+                        ),
+                        BorderFactory.createEmptyBorder(10, 12, 10, 12)
                 ));
             }
         }
-        selectedCard.setBackground(new Color(240, 253, 250));
-        selectedCard.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(16, 185, 129), 2),
-                BorderFactory.createEmptyBorder(10, 15, 10, 15)
-        ));
+        container.repaint();
     }
 
-    private void terimaLaporan(String idLaporan) {
-        String sql = "UPDATE laporan SET status = 'Diproses' WHERE id = ?";
+    private void prosesTerimaLaporan(String laporanId) {
         Connection conn = null;
-        PreparedStatement ps = null;
+        PreparedStatement psUpdate = null;
+        PreparedStatement psInsert = null;
         try {
             conn = DatabaseConnection.getConnection();
-            ps = conn.prepareStatement(sql);
-            ps.setString(1, idLaporan);
-            ps.executeUpdate();
+            conn.setAutoCommit(false);
+
+            psUpdate = conn.prepareStatement("UPDATE laporan SET status = 'Diproses' WHERE id = ?");
+            psUpdate.setString(1, laporanId);
+            psUpdate.executeUpdate();
+
+            psInsert = conn.prepareStatement(
+                    "INSERT INTO penanganan_laporan (laporan_id, status_penanganan) VALUES (?, 'Diproses') "
+                            + "ON DUPLICATE KEY UPDATE status_penanganan = VALUES(status_penanganan)"
+            );
+            psInsert.setString(1, laporanId);
+            psInsert.executeUpdate();
+
+            conn.commit();
+            JOptionPane.showMessageDialog(this, "Laporan #" + laporanId + " diterima dan berstatus Diproses.");
             muatDataLaporanDanJadwal();
+            muatHistoryBulanan();
         } catch (SQLException e) {
-            e.printStackTrace();
-            JOptionPane.showMessageDialog(this, "Gagal memproses laporan: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            if (conn != null) {
+                try {
+                    conn.rollback();
+                } catch (SQLException ignored) {
+                }
+            }
+            JOptionPane.showMessageDialog(this, "Gagal menerima laporan: " + e.getMessage());
         } finally {
-            tutupResource(null, ps, conn);
+            tutupResource(null, psUpdate, null);
+            tutupResource(null, psInsert, conn);
         }
     }
 
-    private void tolakLaporan(String idLaporan) {
-        JTextArea txtFeedback = new JTextArea(4, 30);
-        txtFeedback.setLineWrap(true);
-        txtFeedback.setWrapStyleWord(true);
-
-        JPanel dialogPanel = new JPanel(new BorderLayout(6, 6));
-        dialogPanel.add(new JLabel("Feedback / alasan penolakan untuk " + idLaporan + " (opsional):"), BorderLayout.NORTH);
-        dialogPanel.add(new JScrollPane(txtFeedback), BorderLayout.CENTER);
-
-        int res = JOptionPane.showConfirmDialog(this, dialogPanel, "Feedback Penolakan", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
-        if (res != JOptionPane.OK_OPTION) {
+    private void prosesTolakLaporan(String laporanId) {
+        String feedback = JOptionPane.showInputDialog(
+                this,
+                "Alasan penolakan / feedback (opsional):",
+                "Tolak Laporan #" + laporanId,
+                JOptionPane.PLAIN_MESSAGE
+        );
+        if (feedback == null) {
             return;
         }
 
-        String alasan = txtFeedback.getText().trim();
-        String alasanSimpan = alasan.isEmpty() ? "-" : alasan;
-
         Connection conn = null;
-        PreparedStatement psUpd = null;
-        PreparedStatement psTolak = null;
+        PreparedStatement psUpdate = null;
+        PreparedStatement psInsert = null;
         try {
             conn = DatabaseConnection.getConnection();
-            psUpd = conn.prepareStatement("UPDATE laporan SET status = 'Ditolak' WHERE id = ?");
-            psUpd.setString(1, idLaporan);
-            psUpd.executeUpdate();
+            conn.setAutoCommit(false);
 
-            String sqlTolak = "INSERT INTO riwayat_penolakan (laporan_id, admin_id, alasan_penolakan) VALUES (?, ?, ?) " +
-                    "ON DUPLICATE KEY UPDATE admin_id = VALUES(admin_id), alasan_penolakan = VALUES(alasan_penolakan)";
-            psTolak = conn.prepareStatement(sqlTolak);
-            psTolak.setString(1, idLaporan);
-            psTolak.setInt(2, adminId);
-            psTolak.setString(3, alasanSimpan);
-            psTolak.executeUpdate();
+            psUpdate = conn.prepareStatement("UPDATE laporan SET status = 'Ditolak' WHERE id = ?");
+            psUpdate.setString(1, laporanId);
+            psUpdate.executeUpdate();
 
+            String trimmed = feedback.trim();
+            psInsert = conn.prepareStatement(
+                    "INSERT INTO riwayat_penolakan (laporan_id, alasan_penolakan) VALUES (?, ?) "
+                            + "ON DUPLICATE KEY UPDATE alasan_penolakan = VALUES(alasan_penolakan)"
+            );
+            psInsert.setString(1, laporanId);
+            if (trimmed.isEmpty()) {
+                psInsert.setNull(2, java.sql.Types.VARCHAR);
+            } else {
+                psInsert.setString(2, trimmed);
+            }
+            psInsert.executeUpdate();
+
+            conn.commit();
+            JOptionPane.showMessageDialog(this, "Laporan #" + laporanId + " telah ditolak.");
             muatDataLaporanDanJadwal();
+            muatHistoryBulanan();
         } catch (SQLException e) {
-            e.printStackTrace();
-            JOptionPane.showMessageDialog(this, "Gagal menolak laporan: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            if (conn != null) {
+                try {
+                    conn.rollback();
+                } catch (SQLException ignored) {
+                }
+            }
+            JOptionPane.showMessageDialog(this, "Gagal menolak laporan: " + e.getMessage());
         } finally {
-            tutupResource(null, psUpd, null);
-            tutupResource(null, psTolak, conn);
+            tutupResource(null, psUpdate, null);
+            tutupResource(null, psInsert, conn);
         }
     }
 
     private void simpanJadwalPerbaikan() {
-        String idLaporan = txtIdLaporanJadwal.getText().trim();
-        if (idLaporan.isEmpty()) {
-            idLaporan = selectedIdJadwal;
+        if (selectedLaporanId == null || selectedLaporanId.trim().isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Pilih laporan terlebih dahulu pada daftar jadwal.");
+            return;
         }
-        String jadwal = txtTanggalPerbaikan.getText().trim();
-        String teknisi = (String) cbTeknisiAnggota.getSelectedItem();
-
-        if (idLaporan.isEmpty() || jadwal.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Pilih card laporan berstatus Diproses terlebih dahulu!", "Peringatan", JOptionPane.WARNING_MESSAGE);
+        String tanggal = txtTanggalPerbaikan.getText().trim();
+        String teknisi = txtNamaTeknisi.getText().trim();
+        if (tanggal.isEmpty() || teknisi.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Tanggal perbaikan dan nama teknisi wajib diisi.");
             return;
         }
 
-        String sql = "INSERT INTO penanganan_laporan (laporan_id, admin_id, jadwal_perbaikan, nama_teknisi) VALUES (?, ?, ?, ?) " +
-                "ON DUPLICATE KEY UPDATE admin_id = VALUES(admin_id), jadwal_perbaikan = VALUES(jadwal_perbaikan), nama_teknisi = VALUES(nama_teknisi)";
         Connection conn = null;
         PreparedStatement ps = null;
         try {
             conn = DatabaseConnection.getConnection();
+            String sql = "INSERT INTO penanganan_laporan (laporan_id, jadwal_perbaikan, nama_teknisi, status_penanganan) "
+                    + "VALUES (?, ?, ?, 'Diproses') "
+                    + "ON DUPLICATE KEY UPDATE jadwal_perbaikan = VALUES(jadwal_perbaikan), "
+                    + "nama_teknisi = VALUES(nama_teknisi), status_penanganan = 'Diproses'";
             ps = conn.prepareStatement(sql);
-            ps.setString(1, idLaporan);
-            ps.setInt(2, adminId);
-            ps.setString(3, jadwal);
-            ps.setString(4, teknisi);
+            ps.setString(1, selectedLaporanId);
+            ps.setString(2, tanggal);
+            ps.setString(3, teknisi);
             ps.executeUpdate();
 
-            JOptionPane.showMessageDialog(this, "Jadwal dan teknisi berhasil disimpan!");
-            resetPilihanJadwal();
+            JOptionPane.showMessageDialog(this, "Jadwal perbaikan berhasil disimpan.");
             muatDataLaporanDanJadwal();
+            muatHistoryBulanan();
         } catch (SQLException e) {
-            e.printStackTrace();
-            JOptionPane.showMessageDialog(this, "Gagal menyimpan jadwal: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Gagal menyimpan jadwal: " + e.getMessage());
         } finally {
             tutupResource(null, ps, conn);
         }
     }
 
     private void tandaiSelesaiPerbaikan() {
-        String idTarget = selectedIdJadwal.isEmpty() ? txtIdLaporanJadwal.getText().trim() : selectedIdJadwal;
-        if (idTarget.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Pilih Card pada daftar Jadwal di atas terlebih dahulu!", "Peringatan", JOptionPane.WARNING_MESSAGE);
+        if (selectedLaporanId == null || selectedLaporanId.trim().isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Pilih laporan terlebih dahulu pada daftar jadwal.");
             return;
         }
 
         Connection conn = null;
-        PreparedStatement ps = null;
+        PreparedStatement psLap = null;
         PreparedStatement psPen = null;
         try {
             conn = DatabaseConnection.getConnection();
-            ps = conn.prepareStatement("UPDATE laporan SET status = 'Selesai' WHERE id = ?");
-            ps.setString(1, idTarget);
-            ps.executeUpdate();
+            conn.setAutoCommit(false);
 
-            psPen = conn.prepareStatement("UPDATE penanganan_laporan SET tanggal_selesai = ? WHERE laporan_id = ?");
-            psPen.setString(1, LocalDate.now().toString());
-            psPen.setString(2, idTarget);
+            psLap = conn.prepareStatement("UPDATE laporan SET status = 'Selesai' WHERE id = ?");
+            psLap.setString(1, selectedLaporanId);
+            psLap.executeUpdate();
+
+            psPen = conn.prepareStatement(
+                    "UPDATE penanganan_laporan SET status_penanganan = 'Selesai', tanggal_selesai = CURDATE() WHERE laporan_id = ?"
+            );
+            psPen.setString(1, selectedLaporanId);
             psPen.executeUpdate();
 
-            JOptionPane.showMessageDialog(this, "Laporan ditandai Selesai!");
-            resetPilihanJadwal();
+            conn.commit();
+            JOptionPane.showMessageDialog(this, "Laporan #" + selectedLaporanId + " ditandai Selesai.");
             muatDataLaporanDanJadwal();
+            muatHistoryBulanan();
         } catch (SQLException e) {
-            e.printStackTrace();
-            JOptionPane.showMessageDialog(this, "Gagal menandai selesai: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            if (conn != null) {
+                try {
+                    conn.rollback();
+                } catch (SQLException ignored) {
+                }
+            }
+            JOptionPane.showMessageDialog(this, "Gagal menandai selesai: " + e.getMessage());
         } finally {
-            tutupResource(null, ps, null);
+            tutupResource(null, psLap, null);
             tutupResource(null, psPen, conn);
         }
     }
 
-    private void tambahAkunPelapor() {
-        String nim = txtNewNim.getText().trim();
-        String password = new String(txtNewPassword.getPassword()).trim();
-        if (nim.isEmpty() || password.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "NIM & Password wajib diisi!", "Peringatan", JOptionPane.WARNING_MESSAGE);
+    private void muatHistoryBulanan() {
+        if (cmbBulanHistory == null || cmbTahunHistory == null || panelKalenderBulanan == null || panelRincianBulanan == null) {
             return;
         }
 
-        String passHash = PasswordUtil.hashPassword(password);
-        String sql = "INSERT INTO users (nim, username, nama_lengkap, password_hash, role, status_akun) " +
-                "VALUES (?, ?, NULL, ?, 'pelapor', 'aktif')";
-        Connection conn = null;
-        PreparedStatement ps = null;
-        try {
-            conn = DatabaseConnection.getConnection();
-            ps = conn.prepareStatement(sql);
-            ps.setString(1, nim);
-            ps.setString(2, nim);
-            ps.setString(3, passHash);
-            ps.executeUpdate();
+        int bulan = cmbBulanHistory.getSelectedIndex() + 1;
+        int tahun = Integer.parseInt((String) cmbTahunHistory.getSelectedItem());
+        YearMonth ym = YearMonth.of(tahun, bulan);
 
-            JOptionPane.showMessageDialog(this, "Akun pelapor berhasil ditambahkan!");
-            txtNewNim.setText("");
-            txtNewPassword.setText("");
-            muatDataAkun();
-        } catch (SQLException e) {
-            e.printStackTrace();
-            JOptionPane.showMessageDialog(this, "Gagal menambah akun: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-        } finally {
-            tutupResource(null, ps, conn);
-        }
-    }
-
-    private void gantiPasswordAkun() {
-        String targetNim = txtTargetNimPassword.getText().trim();
-        String passBaru = new String(txtGantiPasswordBaru.getPassword()).trim();
-
-        if (targetNim.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Pilih akun pelapor pada daftar di atas terlebih dahulu!", "Peringatan", JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-        if (passBaru.length() < 4) {
-            JOptionPane.showMessageDialog(this, "Password baru minimal 4 karakter!", "Peringatan", JOptionPane.WARNING_MESSAGE);
-            return;
+        if (lblJudulBulanHistory != null) {
+            lblJudulBulanHistory.setText("Kalender Laporan - " + ym.getMonth() + " " + tahun);
         }
 
-        String passHashBaru = PasswordUtil.hashPassword(passBaru);
-        String sql = "UPDATE users SET password_hash = ? WHERE nim = ? AND role = 'pelapor'";
+        Map<Integer, List<ModelLaporan>> byDay = new HashMap<>();
+        List<ModelLaporan> semuaBulanIni = new ArrayList<>();
 
         Connection conn = null;
         PreparedStatement ps = null;
+        ResultSet rs = null;
         try {
             conn = DatabaseConnection.getConnection();
+            String sql = "SELECT l.id, l.tanggal_lapor, l.deskripsi, l.status, "
+                    + "gr.nama_lokasi AS lokasi, f.nama_fasilitas AS fasilitas, "
+                    + "u.nim, u.nama_lengkap, pl.jadwal_perbaikan, pl.nama_teknisi "
+                    + "FROM laporan l "
+                    + "JOIN gedung_ruangan gr ON l.ruangan_id = gr.id "
+                    + "JOIN fasilitas f ON l.fasilitas_id = f.id "
+                    + "JOIN users u ON l.pelapor_id = u.id "
+                    + "LEFT JOIN penanganan_laporan pl ON pl.laporan_id = l.id "
+                    + "WHERE MONTH(l.tanggal_lapor) = ? AND YEAR(l.tanggal_lapor) = ? "
+                    + "ORDER BY l.tanggal_lapor ASC, l.id ASC";
             ps = conn.prepareStatement(sql);
-            ps.setString(1, passHashBaru);
-            ps.setString(2, targetNim);
-            int affected = ps.executeUpdate();
+            ps.setInt(1, bulan);
+            ps.setInt(2, tahun);
+            rs = ps.executeQuery();
 
-            if (affected > 0) {
-                JOptionPane.showMessageDialog(this, "Password akun " + targetNim + " berhasil diperbarui!");
-                txtGantiPasswordBaru.setText("");
-            } else {
-                JOptionPane.showMessageDialog(this, "Akun tidak ditemukan!", "Error", JOptionPane.ERROR_MESSAGE);
+            while (rs.next()) {
+                ModelLaporan item = new ModelLaporan();
+                item.setId(rs.getString("id"));
+                item.setTanggalLapor(rs.getString("tanggal_lapor"));
+                item.setDeskripsi(rs.getString("deskripsi"));
+                item.setStatus(rs.getString("status"));
+                item.setLokasi(rs.getString("lokasi"));
+                item.setFasilitas(rs.getString("fasilitas"));
+                item.setPelapor(formatNamaPelapor(rs.getString("nama_lengkap"), rs.getString("nim")));
+                item.setJadwalPerbaikan(rs.getString("jadwal_perbaikan"));
+                item.setNamaTeknisi(rs.getString("nama_teknisi"));
+
+                semuaBulanIni.add(item);
+                try {
+                    LocalDate d = LocalDate.parse(item.getTanggalLapor().substring(0, 10), DATE_FMT);
+                    byDay.computeIfAbsent(d.getDayOfMonth(), k -> new ArrayList<>()).add(item);
+                } catch (Exception ignored) {
+                }
             }
         } catch (SQLException e) {
-            e.printStackTrace();
-            JOptionPane.showMessageDialog(this, "Gagal memperbarui password: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Gagal memuat history bulanan: " + e.getMessage());
+        } finally {
+            tutupResource(rs, ps, conn);
+        }
+
+        renderKalenderBulan(ym, byDay);
+        renderRincianBulanan(semuaBulanIni, null);
+    }
+
+    private void renderKalenderBulan(YearMonth ym, final Map<Integer, List<ModelLaporan>> byDay) {
+        panelKalenderBulanan.removeAll();
+        String[] hari = {"Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"};
+        for (String h : hari) {
+            JLabel lblHari = new JLabel(h, SwingConstants.CENTER);
+            lblHari.setFont(new Font("SansSerif", Font.BOLD, 11));
+            lblHari.setForeground(new Color(71, 85, 105));
+            panelKalenderBulanan.add(lblHari);
+        }
+
+        int firstDayOfWeek = ym.atDay(1).getDayOfWeek().getValue();
+        for (int i = 1; i < firstDayOfWeek; i++) {
+            panelKalenderBulanan.add(new JLabel(""));
+        }
+
+        int lengthOfMonth = ym.lengthOfMonth();
+        for (int day = 1; day <= lengthOfMonth; day++) {
+            final int tgl = day;
+            final List<ModelLaporan> itemsHari = byDay.getOrDefault(day, new ArrayList<>());
+            JButton btnDay = new JButton("<html><center>" + day + (itemsHari.isEmpty() ? "" : "<br><small>(" + itemsHari.size() + ")</small>") + "</center></html>");
+            btnDay.setFont(new Font("SansSerif", Font.PLAIN, 11));
+            btnDay.setFocusPainted(false);
+            btnDay.setBackground(itemsHari.isEmpty() ? Color.WHITE : new Color(219, 234, 254));
+            btnDay.addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    renderRincianBulanan(itemsHari, ym.atDay(tgl).format(DATE_FMT));
+                }
+            });
+            panelKalenderBulanan.add(btnDay);
+        }
+
+        panelKalenderBulanan.revalidate();
+        panelKalenderBulanan.repaint();
+    }
+
+    private void renderRincianBulanan(List<ModelLaporan> list, String tanggalFilter) {
+        panelRincianBulanan.removeAll();
+        if (list == null || list.isEmpty()) {
+            String msg = (tanggalFilter != null)
+                    ? "Tidak ada laporan pada tanggal " + tanggalFilter + "."
+                    : "Tidak ada laporan pada bulan ini.";
+            JLabel empty = new JLabel(msg);
+            empty.setFont(new Font("SansSerif", Font.PLAIN, 12));
+            empty.setForeground(new Color(100, 116, 139));
+            panelRincianBulanan.add(empty);
+        } else {
+            for (ModelLaporan item : list) {
+                JPanel row = new JPanel();
+                row.setLayout(new BoxLayout(row, BoxLayout.Y_AXIS));
+                row.setBackground(new Color(248, 250, 252));
+                row.setBorder(BorderFactory.createCompoundBorder(
+                        BorderFactory.createLineBorder(new Color(226, 232, 240), 1),
+                        new EmptyBorder(8, 10, 8, 10)
+                ));
+                row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 90));
+
+                JLabel l1 = new JLabel("#" + item.getId() + " | " + item.getTanggalLapor() + " | " + item.getStatus());
+                l1.setFont(new Font("SansSerif", Font.BOLD, 12));
+
+                JLabel l2 = new JLabel(item.getFasilitas() + " - " + item.getLokasi() + " (" + item.getPelapor() + ")");
+                l2.setFont(new Font("SansSerif", Font.PLAIN, 11));
+
+                JLabel l3 = new JLabel("Deskripsi: " + item.getDeskripsi());
+                l3.setFont(new Font("SansSerif", Font.PLAIN, 11));
+
+                row.add(l1);
+                row.add(l2);
+                row.add(l3);
+
+                panelRincianBulanan.add(row);
+                panelRincianBulanan.add(Box.createVerticalStrut(8));
+            }
+        }
+        panelRincianBulanan.revalidate();
+        panelRincianBulanan.repaint();
+    }
+
+    private void muatDaftarUser() {
+        if (panelDaftarUser == null) return;
+        panelDaftarUser.removeAll();
+        selectedUserCard = null;
+        selectedUserId = null;
+
+        Connection conn = null;
+        PreparedStatement ps = null;
+        ResultSet rs = null;
+        try {
+            conn = DatabaseConnection.getConnection();
+            ps = conn.prepareStatement("SELECT id, nim, nama_lengkap, role FROM users ORDER BY id ASC");
+            rs = ps.executeQuery();
+
+            while (rs.next()) {
+                final String uid = rs.getString("id");
+                final String nim = rs.getString("nim");
+                final String nama = rs.getString("nama_lengkap");
+                final String role = rs.getString("role");
+
+                final JPanel card = new JPanel();
+                card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
+                card.setBackground(Color.WHITE);
+                card.setBorder(BorderFactory.createCompoundBorder(
+                        BorderFactory.createLineBorder(new Color(203, 213, 225), 1),
+                        new EmptyBorder(10, 12, 10, 12)
+                ));
+                card.setMaximumSize(new Dimension(Integer.MAX_VALUE, 70));
+                card.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+
+                JLabel lblNama = new JLabel(nama + " (" + nim + ")");
+                lblNama.setFont(new Font("SansSerif", Font.BOLD, 12));
+
+                JLabel lblRole = new JLabel("Role: " + role);
+                lblRole.setFont(new Font("SansSerif", Font.PLAIN, 11));
+                lblRole.setForeground(new Color(71, 85, 105));
+
+                card.add(lblNama);
+                card.add(Box.createVerticalStrut(2));
+                card.add(lblRole);
+
+                card.addMouseListener(new MouseAdapter() {
+                    @Override
+                    public void mouseClicked(MouseEvent e) {
+                        selectedUserId = uid;
+                        selectedUserCard = card;
+                        highlightCard(panelDaftarUser, card);
+                        lblSelectedUser.setText("Mengedit User ID #" + uid);
+                        txtEditNim.setText(nim != null ? nim : "");
+                        txtEditNama.setText(nama != null ? nama : "");
+                        cmbEditRole.setSelectedItem(role != null ? role : "Pelapor");
+                        txtPasswordBaru.setText("");
+                    }
+                });
+
+                panelDaftarUser.add(card);
+                panelDaftarUser.add(Box.createVerticalStrut(8));
+            }
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(this, "Gagal memuat daftar user: " + e.getMessage());
+        } finally {
+            tutupResource(rs, ps, conn);
+        }
+
+        panelDaftarUser.revalidate();
+        panelDaftarUser.repaint();
+    }
+
+    private void simpanPerubahanAkun() {
+        if (selectedUserId == null || selectedUserId.trim().isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Pilih akun pengguna terlebih dahulu.");
+            return;
+        }
+        String nim = txtEditNim.getText().trim();
+        String nama = txtEditNama.getText().trim();
+        String role = (String) cmbEditRole.getSelectedItem();
+
+        if (nim.isEmpty() || nama.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "NIM dan Nama Lengkap wajib diisi.");
+            return;
+        }
+
+        Connection conn = null;
+        PreparedStatement ps = null;
+        try {
+            conn = DatabaseConnection.getConnection();
+            ps = conn.prepareStatement("UPDATE users SET nim = ?, nama_lengkap = ?, role = ? WHERE id = ?");
+            ps.setString(1, nim);
+            ps.setString(2, nama);
+            ps.setString(3, role);
+            ps.setString(4, selectedUserId);
+            ps.executeUpdate();
+
+            JOptionPane.showMessageDialog(this, "Data akun berhasil diperbarui.");
+            muatDaftarUser();
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(this, "Gagal memperbarui akun: " + e.getMessage());
         } finally {
             tutupResource(null, ps, conn);
         }
     }
 
-    private void tutupResource(ResultSet rs, Statement stmt, Connection conn) {
+    private void resetPasswordUser() {
+        if (selectedUserId == null || selectedUserId.trim().isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Pilih akun pengguna terlebih dahulu.");
+            return;
+        }
+        String passBaru = txtPasswordBaru.getText();
+        if (passBaru == null || passBaru.trim().isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Masukkan password baru terlebih dahulu.");
+            return;
+        }
+
+        Connection conn = null;
+        PreparedStatement ps = null;
+        try {
+            String hashed = PasswordUtil.hashPassword(passBaru.trim());
+            conn = DatabaseConnection.getConnection();
+            ps = conn.prepareStatement("UPDATE users SET password_hash = ? WHERE id = ?");
+            ps.setString(1, hashed);
+            ps.setString(2, selectedUserId);
+            ps.executeUpdate();
+
+            txtPasswordBaru.setText("");
+            JOptionPane.showMessageDialog(this, "Password pengguna berhasil direset.");
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(this, "Gagal mereset password: " + e.getMessage());
+        } finally {
+            tutupResource(null, ps, conn);
+        }
+    }
+
+    private void bukaPilihTanggalDialog() {
+        final JDialog dialog = new JDialog(this, "Pilih Tanggal Perbaikan", true);
+        dialog.setSize(340, 300);
+        dialog.setLocationRelativeTo(this);
+        dialog.setLayout(new BorderLayout(8, 8));
+
+        LocalDate baseDate = LocalDate.now();
+        try {
+            if (!txtTanggalPerbaikan.getText().trim().isEmpty()) {
+                baseDate = LocalDate.parse(txtTanggalPerbaikan.getText().trim(), DATE_FMT);
+            }
+        } catch (Exception ignored) {
+        }
+
+        final YearMonth[] currentYm = {YearMonth.from(baseDate)};
+        final JLabel lblMonth = new JLabel("", SwingConstants.CENTER);
+        lblMonth.setFont(new Font("SansSerif", Font.BOLD, 13));
+
+        final JPanel grid = new JPanel(new GridLayout(0, 7, 4, 4));
+        grid.setBorder(new EmptyBorder(6, 8, 8, 8));
+
+        final Runnable renderCal = new Runnable() {
+            @Override
+            public void run() {
+                grid.removeAll();
+                lblMonth.setText(currentYm[0].getMonth() + " " + currentYm[0].getYear());
+                String[] h = {"Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"};
+                for (String s : h) {
+                    grid.add(new JLabel(s, SwingConstants.CENTER));
+                }
+                int start = currentYm[0].atDay(1).getDayOfWeek().getValue();
+                for (int i = 1; i < start; i++) {
+                    grid.add(new JLabel(""));
+                }
+                for (int d = 1; d <= currentYm[0].lengthOfMonth(); d++) {
+                    final int dayNum = d;
+                    JButton b = new JButton(String.valueOf(d));
+                    b.setMargin(new Insets(2, 2, 2, 2));
+                    b.addActionListener(new ActionListener() {
+                        @Override
+                        public void actionPerformed(ActionEvent e) {
+                            LocalDate chosen = currentYm[0].atDay(dayNum);
+                            txtTanggalPerbaikan.setText(chosen.format(DATE_FMT));
+                            dialog.dispose();
+                        }
+                    });
+                    grid.add(b);
+                }
+                grid.revalidate();
+                grid.repaint();
+            }
+        };
+
+        JPanel topNav = new JPanel(new BorderLayout());
+        JButton btnPrev = new JButton("<");
+        JButton btnNext = new JButton(">");
+        btnPrev.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                currentYm[0] = currentYm[0].minusMonths(1);
+                renderCal.run();
+            }
+        });
+        btnNext.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                currentYm[0] = currentYm[0].plusMonths(1);
+                renderCal.run();
+            }
+        });
+
+        topNav.add(btnPrev, BorderLayout.WEST);
+        topNav.add(lblMonth, BorderLayout.CENTER);
+        topNav.add(btnNext, BorderLayout.EAST);
+
+        renderCal.run();
+        dialog.add(topNav, BorderLayout.NORTH);
+        dialog.add(grid, BorderLayout.CENTER);
+        dialog.setVisible(true);
+    }
+
+    private String formatNamaPelapor(String nama, String nim) {
+        String n = nama != null ? nama.trim() : "";
+        String m = nim != null ? nim.trim() : "";
+        if (!n.isEmpty() && !m.isEmpty()) {
+            return n + " (" + m + ")";
+        }
+        return !n.isEmpty() ? n : (!m.isEmpty() ? m : "-");
+    }
+
+    private void tutupResource(ResultSet rs, PreparedStatement ps, Connection conn) {
         if (rs != null) {
             try {
                 rs.close();
             } catch (SQLException ignored) {
             }
         }
-        if (stmt != null) {
+        if (ps != null) {
             try {
-                stmt.close();
+                ps.close();
             } catch (SQLException ignored) {
             }
         }
