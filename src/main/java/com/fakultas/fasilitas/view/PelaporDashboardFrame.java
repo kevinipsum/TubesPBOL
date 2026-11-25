@@ -1,6 +1,8 @@
 package com.fakultas.fasilitas.view;
 
 import com.fakultas.fasilitas.model.DatabaseConnection;
+import com.fakultas.fasilitas.model.ModelLaporan;
+import com.fakultas.fasilitas.model.ModelUser;
 import com.fakultas.fasilitas.util.PasswordUtil;
 
 import javax.swing.*;
@@ -16,6 +18,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 public class PelaporDashboardFrame extends JFrame {
     private JPanel cardPanel;
@@ -32,6 +36,7 @@ public class PelaporDashboardFrame extends JFrame {
 
     private int pelaporId;
     private String currentNim;
+    private ModelUser currentUser;
 
     public PelaporDashboardFrame(int pelaporId, String nim) {
         this.pelaporId = pelaporId;
@@ -480,7 +485,7 @@ public class PelaporDashboardFrame extends JFrame {
     }
 
     private void muatProfilAkun() {
-        String sql = "SELECT nim, nama_lengkap, status_akun FROM users WHERE nim = ? OR username = ? LIMIT 1";
+        String sql = "SELECT id, nim, username, nama_lengkap, role, status_akun FROM users WHERE nim = ? OR username = ? LIMIT 1";
         Connection conn = null;
         PreparedStatement ps = null;
         ResultSet rs = null;
@@ -491,14 +496,26 @@ public class PelaporDashboardFrame extends JFrame {
             ps.setString(2, currentNim);
             rs = ps.executeQuery();
             if (rs.next()) {
-                String nimDb = rs.getString("nim");
-                String namaDb = rs.getString("nama_lengkap");
-                String statusDb = rs.getString("status_akun");
+                ModelUser user = new ModelUser();
+                user.setId(rs.getInt("id"));
+                user.setNim(rs.getString("nim"));
+                user.setUsername(rs.getString("username"));
+                user.setNamaLengkap(rs.getString("nama_lengkap"));
+                user.setRole(rs.getString("role"));
+                user.setStatusAkun(rs.getString("status_akun"));
+                this.currentUser = user;
+                if (user.getId() > 0) {
+                    this.pelaporId = user.getId();
+                }
 
-                txtAkunNim.setText(nimDb != null ? nimDb : currentNim);
-                txtAkunNama.setText(namaDb != null ? namaDb : "");
-                txtAkunStatus.setText(statusDb != null ? statusDb : "aktif");
-                perbaruiLabelSidebar(namaDb);
+                String nimTampil = (user.getNim() != null && !user.getNim().isEmpty()) ? user.getNim() : currentNim;
+                String namaTampil = user.getNamaLengkap() != null ? user.getNamaLengkap() : "";
+                String statusTampil = (user.getStatusAkun() != null && !user.getStatusAkun().isEmpty()) ? user.getStatusAkun() : "aktif";
+
+                txtAkunNim.setText(nimTampil);
+                txtAkunNama.setText(namaTampil);
+                txtAkunStatus.setText(statusTampil);
+                perbaruiLabelSidebar(namaTampil);
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -543,12 +560,20 @@ public class PelaporDashboardFrame extends JFrame {
                 ps.setString(2, passHashBaru);
                 ps.setInt(3, uid);
                 ps.executeUpdate();
+                if (currentUser != null) {
+                    currentUser.setPasswordHash(passHashBaru);
+                }
             } else {
                 String sql = "UPDATE users SET nama_lengkap = ? WHERE id = ?";
                 ps = conn.prepareStatement(sql);
                 ps.setString(1, namaSimpan);
                 ps.setInt(2, uid);
                 ps.executeUpdate();
+            }
+
+            if (currentUser != null) {
+                currentUser.setId(uid);
+                currentUser.setNamaLengkap(namaSimpan);
             }
 
             txtPassBaru.setText("");
@@ -613,6 +638,9 @@ public class PelaporDashboardFrame extends JFrame {
     }
 
     private int resolvePelaporId(Connection conn) throws SQLException {
+        if (currentUser != null && currentUser.getId() > 0) {
+            return currentUser.getId();
+        }
         if (pelaporId > 0) {
             return pelaporId;
         }
@@ -626,6 +654,7 @@ public class PelaporDashboardFrame extends JFrame {
             rs = ps.executeQuery();
             if (rs.next()) {
                 uid = rs.getInt("id");
+                pelaporId = uid;
             }
         } finally {
             tutupResource(rs, ps, null);
@@ -695,6 +724,8 @@ public class PelaporDashboardFrame extends JFrame {
         panelSelesai.removeAll();
         panelDitolak.removeAll();
 
+        List<ModelLaporan> daftarLaporan = new ArrayList<ModelLaporan>();
+
         String sql = "SELECT l.id, f.nama_fasilitas AS fasilitas, gr.nama_lokasi AS lokasi, " +
                 "l.tanggal_lapor AS tanggal, l.deskripsi, l.status, " +
                 "pl.jadwal_perbaikan, pl.nama_teknisi, rp.alasan_penolakan " +
@@ -718,18 +749,23 @@ public class PelaporDashboardFrame extends JFrame {
 
             rs = ps.executeQuery();
             while (rs.next()) {
-                String status = rs.getString("status");
-                JPanel cardItem = createReportCard(
-                        rs.getString("id"),
-                        rs.getString("fasilitas"),
-                        rs.getString("lokasi"),
-                        rs.getString("tanggal"),
-                        rs.getString("deskripsi"),
-                        status,
-                        rs.getString("jadwal_perbaikan"),
-                        rs.getString("nama_teknisi"),
-                        rs.getString("alasan_penolakan")
-                );
+                ModelLaporan laporan = new ModelLaporan();
+                laporan.setId(rs.getString("id"));
+                laporan.setFasilitas(rs.getString("fasilitas"));
+                laporan.setLokasi(rs.getString("lokasi"));
+                laporan.setTanggalLapor(rs.getString("tanggal"));
+                laporan.setDeskripsi(rs.getString("deskripsi"));
+                laporan.setStatus(rs.getString("status"));
+                laporan.setPelapor(currentNim);
+                laporan.setJadwalPerbaikan(rs.getString("jadwal_perbaikan"));
+                laporan.setNamaTeknisi(rs.getString("nama_teknisi"));
+                laporan.setAlasanPenolakan(rs.getString("alasan_penolakan"));
+                daftarLaporan.add(laporan);
+            }
+
+            for (ModelLaporan laporan : daftarLaporan) {
+                String status = laporan.getStatus();
+                JPanel cardItem = createReportCard(laporan);
                 cardItem.setMaximumSize(new Dimension(Integer.MAX_VALUE, 150));
 
                 if ("Diproses".equalsIgnoreCase(status) || "Menunggu".equalsIgnoreCase(status)) {
@@ -757,8 +793,17 @@ public class PelaporDashboardFrame extends JFrame {
         panelDitolak.repaint();
     }
 
-    private JPanel createReportCard(String id, String fasilitas, String lokasi, String tanggal, String deskripsi,
-                                    String status, String jadwal, String teknisi, String alasanTolak) {
+    private JPanel createReportCard(ModelLaporan laporan) {
+        String id = laporan.getId();
+        String fasilitas = laporan.getFasilitas();
+        String lokasi = laporan.getLokasi();
+        String tanggal = laporan.getTanggalLapor();
+        String deskripsi = laporan.getDeskripsi();
+        String status = laporan.getStatus();
+        String jadwal = laporan.getJadwalPerbaikan();
+        String teknisi = laporan.getNamaTeknisi();
+        String alasanTolak = laporan.getAlasanPenolakan();
+
         JPanel card = new JPanel(new BorderLayout(10, 5));
         card.setBackground(Color.WHITE);
         card.setBorder(BorderFactory.createCompoundBorder(
