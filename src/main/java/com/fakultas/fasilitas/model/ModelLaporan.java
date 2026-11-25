@@ -169,20 +169,4 @@ public class ModelLaporan {
     public void setWaktuDitolak(Timestamp waktuDitolak) {
         this.waktuDitolak = waktuDitolak;
     }
-
-    public boolean isDitolak() {
-        return "Ditolak".equalsIgnoreCase(status);
-    }
-
-    public boolean isDiproses() {
-        return "Diproses".equalsIgnoreCase(status);
-    }
-
-    public boolean isSelesai() {
-        return "Selesai".equalsIgnoreCase(status);
-    }
-
-    public boolean isMenunggu() {
-        return "Menunggu".equalsIgnoreCase(status);
-    }
 }

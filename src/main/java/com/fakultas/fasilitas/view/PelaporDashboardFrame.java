@@ -6,16 +6,23 @@ import com.fakultas.fasilitas.util.PasswordUtil;
 import javax.swing.*;
 import javax.swing.border.Border;
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.ItemEvent;
-import java.sql.*;
+import java.awt.event.ItemListener;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.time.LocalDate;
 
 public class PelaporDashboardFrame extends JFrame {
-    private final JPanel cardPanel;
-    private final CardLayout cardLayout;
+    private JPanel cardPanel;
+    private CardLayout cardLayout;
     private JComboBox<String> cbLokasi, cbFasilitas;
     private JTextArea txtDeskripsi;
-    private final JLabel lblSubSidebar;
+    private JLabel lblSubSidebar;
 
     private JPanel panelDiproses, panelSelesai, panelDitolak;
     private JButton btnTabDiproses, btnTabSelesai, btnTabDitolak;
@@ -23,8 +30,8 @@ public class PelaporDashboardFrame extends JFrame {
     private JTextField txtAkunNim, txtAkunNama, txtAkunStatus;
     private JPasswordField txtPassBaru, txtPassKonfirmasi;
 
-    private final int pelaporId;
-    private final String currentNim;
+    private int pelaporId;
+    private String currentNim;
 
     public PelaporDashboardFrame(int pelaporId, String nim) {
         this.pelaporId = pelaporId;
@@ -95,22 +102,37 @@ public class PelaporDashboardFrame extends JFrame {
         cardPanel.add(initRiwayatCardPanel(), "RIWAYAT");
         cardPanel.add(initKelolaAkunPanel(), "AKUN");
 
-        btnMenuForm.addActionListener(e -> {
-            cardLayout.show(cardPanel, "FORM");
-            muatLokasiDariDb();
-        });
-        btnMenuRiwayat.addActionListener(e -> {
-            cardLayout.show(cardPanel, "RIWAYAT");
-            muatDataRiwayatCard();
-        });
-        btnMenuAkun.addActionListener(e -> {
-            cardLayout.show(cardPanel, "AKUN");
-            muatProfilAkun();
+        btnMenuForm.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                cardLayout.show(cardPanel, "FORM");
+                muatLokasiDariDb();
+            }
         });
 
-        btnLogout.addActionListener(e -> {
-            dispose();
-            new LoginFrame().setVisible(true);
+        btnMenuRiwayat.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                cardLayout.show(cardPanel, "RIWAYAT");
+                muatDataRiwayatCard();
+            }
+        });
+
+        btnMenuAkun.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                cardLayout.show(cardPanel, "AKUN");
+                muatProfilAkun();
+            }
+        });
+
+        btnLogout.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                dispose();
+                LoginFrame login = new LoginFrame();
+                login.setVisible(true);
+            }
         });
 
         add(sidebar, BorderLayout.WEST);
@@ -121,7 +143,7 @@ public class PelaporDashboardFrame extends JFrame {
     }
 
     private void perbaruiLabelSidebar(String namaLengkap) {
-        if (namaLengkap != null && !namaLengkap.isBlank() && !namaLengkap.trim().equals(currentNim)) {
+        if (namaLengkap != null && !namaLengkap.trim().isEmpty() && !namaLengkap.trim().equals(currentNim)) {
             lblSubSidebar.setText(namaLengkap.trim());
         } else {
             lblSubSidebar.setText("Panel Pelapor / Mahasiswa");
@@ -161,7 +183,7 @@ public class PelaporDashboardFrame extends JFrame {
         lblLokasi.setBounds(30, 20, 200, 20);
         card.add(lblLokasi);
 
-        cbLokasi = new JComboBox<>();
+        cbLokasi = new JComboBox<String>();
         cbLokasi.addItem("-- Pilih Lokasi / Ruangan Dulu --");
         cbLokasi.setBounds(30, 45, 630, 35);
         card.add(cbLokasi);
@@ -170,15 +192,18 @@ public class PelaporDashboardFrame extends JFrame {
         lblFasilitas.setBounds(30, 95, 200, 20);
         card.add(lblFasilitas);
 
-        cbFasilitas = new JComboBox<>();
+        cbFasilitas = new JComboBox<String>();
         cbFasilitas.addItem("-- Pilih Lokasi Terlebih Dahulu --");
         cbFasilitas.setEnabled(false);
         cbFasilitas.setBounds(30, 120, 630, 35);
         card.add(cbFasilitas);
 
-        cbLokasi.addItemListener(e -> {
-            if (e.getStateChange() == ItemEvent.SELECTED) {
-                muatFasilitasDariDb((String) cbLokasi.getSelectedItem());
+        cbLokasi.addItemListener(new ItemListener() {
+            @Override
+            public void itemStateChanged(ItemEvent e) {
+                if (e.getStateChange() == ItemEvent.SELECTED) {
+                    muatFasilitasDariDb((String) cbLokasi.getSelectedItem());
+                }
             }
         });
 
@@ -209,10 +234,19 @@ public class PelaporDashboardFrame extends JFrame {
         btnReset.setBounds(410, 340, 100, 40);
         card.add(btnReset);
 
-        btnKirim.addActionListener(e -> kirimLaporan());
-        btnReset.addActionListener(e -> {
-            cbLokasi.setSelectedIndex(0);
-            txtDeskripsi.setText("");
+        btnKirim.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                kirimLaporan();
+            }
+        });
+
+        btnReset.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                cbLokasi.setSelectedIndex(0);
+                txtDeskripsi.setText("");
+            }
         });
 
         panel.add(card);
@@ -225,15 +259,22 @@ public class PelaporDashboardFrame extends JFrame {
         cbLokasi.addItem("-- Pilih Lokasi / Ruangan Dulu --");
 
         String sql = "SELECT nama_lokasi FROM gedung_ruangan ORDER BY id ASC";
-        try (Connection conn = DatabaseConnection.getConnection();
-             Statement stmt = conn.createStatement();
-             ResultSet rs = stmt.executeQuery(sql)) {
+        Connection conn = null;
+        Statement stmt = null;
+        ResultSet rs = null;
+        try {
+            conn = DatabaseConnection.getConnection();
+            stmt = conn.createStatement();
+            rs = stmt.executeQuery(sql);
             while (rs.next()) {
                 cbLokasi.addItem(rs.getString("nama_lokasi"));
             }
         } catch (SQLException e) {
             e.printStackTrace();
+        } finally {
+            tutupResource(rs, stmt, conn);
         }
+
         if (prev != null) {
             cbLokasi.setSelectedItem(prev);
         }
@@ -254,16 +295,21 @@ public class PelaporDashboardFrame extends JFrame {
                 "JOIN fasilitas f ON rf.fasilitas_id = f.id " +
                 "WHERE gr.nama_lokasi = ? ORDER BY f.id ASC";
 
-        try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        Connection conn = null;
+        PreparedStatement ps = null;
+        ResultSet rs = null;
+        try {
+            conn = DatabaseConnection.getConnection();
+            ps = conn.prepareStatement(sql);
             ps.setString(1, namaLokasi);
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    cbFasilitas.addItem(rs.getString("nama_fasilitas"));
-                }
+            rs = ps.executeQuery();
+            while (rs.next()) {
+                cbFasilitas.addItem(rs.getString("nama_fasilitas"));
             }
         } catch (SQLException e) {
             e.printStackTrace();
+        } finally {
+            tutupResource(rs, ps, conn);
         }
 
         if (cbFasilitas.getItemCount() == 0) {
@@ -323,19 +369,30 @@ public class PelaporDashboardFrame extends JFrame {
         contentCardPanel.add(scrollSelesai, "SELESAI");
         contentCardPanel.add(scrollDitolak, "DITOLAK");
 
-        CardLayout cl = (CardLayout) contentCardPanel.getLayout();
+        final CardLayout cl = (CardLayout) contentCardPanel.getLayout();
 
-        btnTabDiproses.addActionListener(e -> {
-            cl.show(contentCardPanel, "DIPROSES");
-            updateModernTabStyles("DIPROSES");
+        btnTabDiproses.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                cl.show(contentCardPanel, "DIPROSES");
+                updateModernTabStyles("DIPROSES");
+            }
         });
-        btnTabSelesai.addActionListener(e -> {
-            cl.show(contentCardPanel, "SELESAI");
-            updateModernTabStyles("SELESAI");
+
+        btnTabSelesai.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                cl.show(contentCardPanel, "SELESAI");
+                updateModernTabStyles("SELESAI");
+            }
         });
-        btnTabDitolak.addActionListener(e -> {
-            cl.show(contentCardPanel, "DITOLAK");
-            updateModernTabStyles("DITOLAK");
+
+        btnTabDitolak.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                cl.show(contentCardPanel, "DITOLAK");
+                updateModernTabStyles("DITOLAK");
+            }
         });
 
         updateModernTabStyles("DIPROSES");
@@ -410,7 +467,12 @@ public class PelaporDashboardFrame extends JFrame {
         btnSimpan.setOpaque(true);
         btnSimpan.setBorderPainted(false);
         btnSimpan.setBounds(480, 330, 180, 40);
-        btnSimpan.addActionListener(e -> simpanPerubahanAkun());
+        btnSimpan.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                simpanPerubahanAkun();
+            }
+        });
         card.add(btnSimpan);
 
         panel.add(card);
@@ -419,31 +481,36 @@ public class PelaporDashboardFrame extends JFrame {
 
     private void muatProfilAkun() {
         String sql = "SELECT nim, nama_lengkap, status_akun FROM users WHERE nim = ? OR username = ? LIMIT 1";
-        try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        Connection conn = null;
+        PreparedStatement ps = null;
+        ResultSet rs = null;
+        try {
+            conn = DatabaseConnection.getConnection();
+            ps = conn.prepareStatement(sql);
             ps.setString(1, currentNim);
             ps.setString(2, currentNim);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    String nimDb = rs.getString("nim");
-                    String namaDb = rs.getString("nama_lengkap");
-                    String statusDb = rs.getString("status_akun");
+            rs = ps.executeQuery();
+            if (rs.next()) {
+                String nimDb = rs.getString("nim");
+                String namaDb = rs.getString("nama_lengkap");
+                String statusDb = rs.getString("status_akun");
 
-                    txtAkunNim.setText(nimDb != null ? nimDb : currentNim);
-                    txtAkunNama.setText(namaDb != null ? namaDb : "");
-                    txtAkunStatus.setText(statusDb != null ? statusDb : "aktif");
-                    perbaruiLabelSidebar(namaDb);
-                }
+                txtAkunNim.setText(nimDb != null ? nimDb : currentNim);
+                txtAkunNama.setText(namaDb != null ? namaDb : "");
+                txtAkunStatus.setText(statusDb != null ? statusDb : "aktif");
+                perbaruiLabelSidebar(namaDb);
             }
         } catch (SQLException e) {
             e.printStackTrace();
+        } finally {
+            tutupResource(rs, ps, conn);
         }
     }
 
     private void simpanPerubahanAkun() {
         String namaBaru = txtAkunNama.getText().trim();
-        String passBaru = new String(txtPassBaru.getPassword());
-        String passKonf = new String(txtPassKonfirmasi.getPassword());
+        String passBaru = new String(txtPassBaru.getPassword()).trim();
+        String passKonf = new String(txtPassKonfirmasi.getPassword()).trim();
 
         if (!passBaru.isEmpty() || !passKonf.isEmpty()) {
             if (!passBaru.equals(passKonf)) {
@@ -456,7 +523,10 @@ public class PelaporDashboardFrame extends JFrame {
             }
         }
 
-        try (Connection conn = DatabaseConnection.getConnection()) {
+        Connection conn = null;
+        PreparedStatement ps = null;
+        try {
+            conn = DatabaseConnection.getConnection();
             int uid = resolvePelaporId(conn);
             if (uid <= 0) {
                 JOptionPane.showMessageDialog(this, "Akun tidak ditemukan!", "Error", JOptionPane.ERROR_MESSAGE);
@@ -466,22 +536,19 @@ public class PelaporDashboardFrame extends JFrame {
             String namaSimpan = namaBaru.isEmpty() ? currentNim : namaBaru;
 
             if (!passBaru.isEmpty()) {
+                String passHashBaru = PasswordUtil.hashPassword(passBaru);
                 String sql = "UPDATE users SET nama_lengkap = ?, password_hash = ? WHERE id = ?";
-                try (PreparedStatement ps = conn.prepareStatement(sql)) {
-                    ps.setString(1, namaSimpan);
-                    ps.setString(2, PasswordUtil.hashPassword(passBaru));
-                    ps.setInt(3, uid);
-                    ps.executeUpdate();
-                }
-                catatLog(conn, uid, "GANTI_PASSWORD", "Pelapor memperbarui profil & password");
+                ps = conn.prepareStatement(sql);
+                ps.setString(1, namaSimpan);
+                ps.setString(2, passHashBaru);
+                ps.setInt(3, uid);
+                ps.executeUpdate();
             } else {
                 String sql = "UPDATE users SET nama_lengkap = ? WHERE id = ?";
-                try (PreparedStatement ps = conn.prepareStatement(sql)) {
-                    ps.setString(1, namaSimpan);
-                    ps.setInt(2, uid);
-                    ps.executeUpdate();
-                }
-                catatLog(conn, uid, "UPDATE_PROFIL", "Pelapor memperbarui nama lengkap");
+                ps = conn.prepareStatement(sql);
+                ps.setString(1, namaSimpan);
+                ps.setInt(2, uid);
+                ps.executeUpdate();
             }
 
             txtPassBaru.setText("");
@@ -491,17 +558,8 @@ public class PelaporDashboardFrame extends JFrame {
         } catch (SQLException e) {
             e.printStackTrace();
             JOptionPane.showMessageDialog(this, "Gagal menyimpan perubahan akun: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-        }
-    }
-
-    private void catatLog(Connection conn, int userId, String jenis, String ket) {
-        String sql = "INSERT INTO log_aktivitas_akun (user_id, jenis_aktivitas, keterangan) VALUES (?, ?, ?)";
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setInt(1, userId);
-            ps.setString(2, jenis);
-            ps.setString(3, ket);
-            ps.executeUpdate();
-        } catch (SQLException ignored) {
+        } finally {
+            tutupResource(null, ps, conn);
         }
     }
 
@@ -537,17 +595,21 @@ public class PelaporDashboardFrame extends JFrame {
 
     private String generateIdLaporan(Connection conn) throws SQLException {
         String query = "SELECT id FROM laporan ORDER BY id DESC LIMIT 1";
-        try (Statement stmt = conn.createStatement();
-             ResultSet rs = stmt.executeQuery(query)) {
+        Statement stmt = conn.createStatement();
+        ResultSet rs = stmt.executeQuery(query);
+        String hasil = "LAP-0001";
+        try {
             if (rs.next()) {
                 String lastId = rs.getString("id");
                 if (lastId != null && lastId.startsWith("LAP-")) {
                     int num = Integer.parseInt(lastId.substring(4));
-                    return String.format("LAP-%04d", num + 1);
+                    hasil = String.format("LAP-%04d", num + 1);
                 }
             }
+        } finally {
+            tutupResource(rs, stmt, null);
         }
-        return "LAP-0001";
+        return hasil;
     }
 
     private int resolvePelaporId(Connection conn) throws SQLException {
@@ -555,13 +617,20 @@ public class PelaporDashboardFrame extends JFrame {
             return pelaporId;
         }
         String sql = "SELECT id FROM users WHERE nim = ? OR username = ? LIMIT 1";
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+        PreparedStatement ps = conn.prepareStatement(sql);
+        ResultSet rs = null;
+        int uid = 0;
+        try {
             ps.setString(1, currentNim);
             ps.setString(2, currentNim);
-            try (ResultSet rs = ps.executeQuery()) {
-                return rs.next() ? rs.getInt("id") : 0;
+            rs = ps.executeQuery();
+            if (rs.next()) {
+                uid = rs.getInt("id");
             }
+        } finally {
+            tutupResource(rs, ps, null);
         }
+        return uid;
     }
 
     private void kirimLaporan() {
@@ -583,7 +652,10 @@ public class PelaporDashboardFrame extends JFrame {
                 "FROM gedung_ruangan gr, fasilitas f " +
                 "WHERE gr.nama_lokasi = ? AND f.nama_fasilitas = ? LIMIT 1";
 
-        try (Connection conn = DatabaseConnection.getConnection()) {
+        Connection conn = null;
+        PreparedStatement ps = null;
+        try {
+            conn = DatabaseConnection.getConnection();
             int uid = resolvePelaporId(conn);
             if (uid <= 0) {
                 JOptionPane.showMessageDialog(this, "Akun pelapor tidak ditemukan di database!", "Error", JOptionPane.ERROR_MESSAGE);
@@ -591,17 +663,18 @@ public class PelaporDashboardFrame extends JFrame {
             }
 
             String idLaporan = generateIdLaporan(conn);
-            try (PreparedStatement ps = conn.prepareStatement(sqlInsert)) {
-                ps.setString(1, idLaporan);
-                ps.setInt(2, uid);
-                ps.setString(3, LocalDate.now().toString());
-                ps.setString(4, deskripsi);
-                ps.setString(5, lokasi);
-                ps.setString(6, fasilitas);
-                if (ps.executeUpdate() == 0) {
-                    JOptionPane.showMessageDialog(this, "Lokasi atau fasilitas tidak valid di database!", "Error", JOptionPane.ERROR_MESSAGE);
-                    return;
-                }
+            ps = conn.prepareStatement(sqlInsert);
+            ps.setString(1, idLaporan);
+            ps.setInt(2, uid);
+            ps.setString(3, LocalDate.now().toString());
+            ps.setString(4, deskripsi);
+            ps.setString(5, lokasi);
+            ps.setString(6, fasilitas);
+            int affected = ps.executeUpdate();
+
+            if (affected == 0) {
+                JOptionPane.showMessageDialog(this, "Lokasi atau fasilitas tidak valid di database!", "Error", JOptionPane.ERROR_MESSAGE);
+                return;
             }
 
             JOptionPane.showMessageDialog(this, "Laporan berhasil dikirim dengan ID: " + idLaporan);
@@ -612,6 +685,8 @@ public class PelaporDashboardFrame extends JFrame {
         } catch (SQLException e) {
             e.printStackTrace();
             JOptionPane.showMessageDialog(this, "Gagal mengirim laporan: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        } finally {
+            tutupResource(null, ps, conn);
         }
     }
 
@@ -632,41 +707,46 @@ public class PelaporDashboardFrame extends JFrame {
                 "WHERE (u.nim = ? OR u.username = ?) " +
                 "ORDER BY l.id ASC";
 
-        try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        Connection conn = null;
+        PreparedStatement ps = null;
+        ResultSet rs = null;
+        try {
+            conn = DatabaseConnection.getConnection();
+            ps = conn.prepareStatement(sql);
             ps.setString(1, currentNim);
             ps.setString(2, currentNim);
 
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    String status = rs.getString("status");
-                    JPanel cardItem = createReportCard(
-                            rs.getString("id"),
-                            rs.getString("fasilitas"),
-                            rs.getString("lokasi"),
-                            rs.getString("tanggal"),
-                            rs.getString("deskripsi"),
-                            status,
-                            rs.getString("jadwal_perbaikan"),
-                            rs.getString("nama_teknisi"),
-                            rs.getString("alasan_penolakan")
-                    );
-                    cardItem.setMaximumSize(new Dimension(Integer.MAX_VALUE, 150));
+            rs = ps.executeQuery();
+            while (rs.next()) {
+                String status = rs.getString("status");
+                JPanel cardItem = createReportCard(
+                        rs.getString("id"),
+                        rs.getString("fasilitas"),
+                        rs.getString("lokasi"),
+                        rs.getString("tanggal"),
+                        rs.getString("deskripsi"),
+                        status,
+                        rs.getString("jadwal_perbaikan"),
+                        rs.getString("nama_teknisi"),
+                        rs.getString("alasan_penolakan")
+                );
+                cardItem.setMaximumSize(new Dimension(Integer.MAX_VALUE, 150));
 
-                    if ("Diproses".equalsIgnoreCase(status) || "Menunggu".equalsIgnoreCase(status)) {
-                        panelDiproses.add(cardItem);
-                        panelDiproses.add(Box.createRigidArea(new Dimension(0, 10)));
-                    } else if ("Selesai".equalsIgnoreCase(status)) {
-                        panelSelesai.add(cardItem);
-                        panelSelesai.add(Box.createRigidArea(new Dimension(0, 10)));
-                    } else if ("Ditolak".equalsIgnoreCase(status)) {
-                        panelDitolak.add(cardItem);
-                        panelDitolak.add(Box.createRigidArea(new Dimension(0, 10)));
-                    }
+                if ("Diproses".equalsIgnoreCase(status) || "Menunggu".equalsIgnoreCase(status)) {
+                    panelDiproses.add(cardItem);
+                    panelDiproses.add(Box.createRigidArea(new Dimension(0, 10)));
+                } else if ("Selesai".equalsIgnoreCase(status)) {
+                    panelSelesai.add(cardItem);
+                    panelSelesai.add(Box.createRigidArea(new Dimension(0, 10)));
+                } else if ("Ditolak".equalsIgnoreCase(status)) {
+                    panelDitolak.add(cardItem);
+                    panelDitolak.add(Box.createRigidArea(new Dimension(0, 10)));
                 }
             }
         } catch (SQLException e) {
             e.printStackTrace();
+        } finally {
+            tutupResource(rs, ps, conn);
         }
 
         panelDiproses.revalidate();
@@ -693,12 +773,12 @@ public class PelaporDashboardFrame extends JFrame {
         if ("Menunggu".equalsIgnoreCase(status)) {
             infoTambahan = "<br><font color='#D97706'><b>Status:</b> Menunggu verifikasi admin</font>";
         } else if ("Diproses".equalsIgnoreCase(status)) {
-            infoTambahan = "<br><font color='#059669'><b>Jadwal:</b> " + (jadwal != null && !jadwal.isBlank() ? jadwal : "-") +
-                    "  |  <b>Teknisi:</b> " + (teknisi != null && !teknisi.isBlank() ? teknisi : "-") + "</font>";
+            infoTambahan = "<br><font color='#059669'><b>Jadwal:</b> " + (jadwal != null && !jadwal.isEmpty() ? jadwal : "-") +
+                    "  |  <b>Teknisi:</b> " + (teknisi != null && !teknisi.isEmpty() ? teknisi : "-") + "</font>";
         } else if ("Selesai".equalsIgnoreCase(status)) {
             infoTambahan = "<br><font color='#2563EB'><b>Status:</b> Selesai diperbaiki</font>";
         } else if ("Ditolak".equalsIgnoreCase(status)) {
-            infoTambahan = "<br><font color='#DC2626'><b>Feedback / Alasan:</b> " + (alasanTolak != null && !alasanTolak.isBlank() ? alasanTolak : "-") + "</font>";
+            infoTambahan = "<br><font color='#DC2626'><b>Feedback / Alasan:</b> " + (alasanTolak != null && !alasanTolak.isEmpty() ? alasanTolak : "-") + "</font>";
         }
 
         JLabel lblBody = new JLabel("<html><b>Lokasi:</b> " + lokasi + "   |   <b>Fasilitas:</b> " + fasilitas +
@@ -708,5 +788,26 @@ public class PelaporDashboardFrame extends JFrame {
         card.add(lblHeader, BorderLayout.NORTH);
         card.add(lblBody, BorderLayout.CENTER);
         return card;
+    }
+
+    private void tutupResource(ResultSet rs, Statement stmt, Connection conn) {
+        if (rs != null) {
+            try {
+                rs.close();
+            } catch (SQLException ignored) {
+            }
+        }
+        if (stmt != null) {
+            try {
+                stmt.close();
+            } catch (SQLException ignored) {
+            }
+        }
+        if (conn != null) {
+            try {
+                conn.close();
+            } catch (SQLException ignored) {
+            }
+        }
     }
 }

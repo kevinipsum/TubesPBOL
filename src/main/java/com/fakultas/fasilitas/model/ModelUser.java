@@ -98,16 +98,4 @@ public class ModelUser {
     public void setUpdatedAt(Timestamp updatedAt) {
         this.updatedAt = updatedAt;
     }
-
-    public boolean isAdmin() {
-        return "admin".equalsIgnoreCase(role);
-    }
-
-    public boolean isPelapor() {
-        return "pelapor".equalsIgnoreCase(role);
-    }
-
-    public boolean isAktif() {
-        return statusAkun == null || "aktif".equalsIgnoreCase(statusAkun);
-    }
 }
